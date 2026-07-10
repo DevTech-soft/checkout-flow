@@ -4,6 +4,8 @@ import configuration from '@config/configuration';
 import { envValidationSchema } from '@config/env.validation';
 import { PrismaModule } from '@infrastructure/database/prisma.module';
 import { HealthModule } from '@modules/health/health.module';
+import { ProductModule } from '@modules/product/product.module';
+import { TransactionModule } from '@modules/transaction/transaction.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { HealthModule } from '@modules/health/health.module';
     }),
     PrismaModule,
     HealthModule,
+    ProductModule,
+    TransactionModule,
   ],
 })
 export class AppModule {}

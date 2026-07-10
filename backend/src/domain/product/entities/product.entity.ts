@@ -1,0 +1,12 @@
+import { Money } from '@domain/shared/value-objects/money.vo';
+
+export class Product {
+  constructor(
+    public readonly id: string,
+    public readonly name: string,
+    public readonly description: string,
+    public readonly price: Money,
+    public readonly stock: number,
+    public readonly imageUrl: string,
+  ) {}
+}
