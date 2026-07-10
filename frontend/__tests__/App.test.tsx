@@ -8,5 +8,5 @@ import App from '../App';
 test('renders the initial route without crashing', async () => {
   await render(<App />);
 
-  expect(screen.getByText('Splash')).toBeTruthy();
+  expect(screen.getByText('Checkout Flow')).toBeTruthy();
 });

@@ -1,0 +1,131 @@
+import { useMemo, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
+import type { NativeStackScreenProps } from '@react-navigation/native-stack';
+import ScreenContainer from '@components/ScreenContainer';
+import Button from '@components/Button';
+import TextField from '@components/TextField';
+import CardBrandBadge from '@components/CardBrandBadge';
+import { detectCardBrand } from '@utils/cardBrand';
+import { formatCardNumber, formatExpiryDate } from '@utils/cardFormat';
+import {
+  validateCardNumber,
+  validateCvv,
+  validateExpiryDate,
+  validateFullName,
+} from '@utils/validators';
+import { colors, spacing, typography } from '@theme';
+import type { RootStackParamList } from '@navigation/routes';
+
+type Props = NativeStackScreenProps<RootStackParamList, 'CardForm'>;
+
+type FormErrors = Partial<
+  Record<'cardHolder' | 'cardNumber' | 'expiryDate' | 'cvv', string>
+>;
+
+function CardFormScreen({ route, navigation }: Props) {
+  const { productId, quantity, customer } = route.params;
+
+  const [cardHolder, setCardHolder] = useState('');
+  const [cardNumber, setCardNumber] = useState('');
+  const [expiryDate, setExpiryDate] = useState('');
+  const [cvv, setCvv] = useState('');
+  const [errors, setErrors] = useState<FormErrors>({});
+
+  const brand = useMemo(() => detectCardBrand(cardNumber), [cardNumber]);
+
+  const handleContinue = () => {
+    const nextErrors: FormErrors = {
+      cardHolder: validateFullName(cardHolder) ?? undefined,
+      cardNumber: validateCardNumber(cardNumber) ?? undefined,
+      expiryDate: validateExpiryDate(expiryDate) ?? undefined,
+      cvv: validateCvv(cvv) ?? undefined,
+    };
+    setErrors(nextErrors);
+
+    if (Object.values(nextErrors).some(Boolean)) {
+      return;
+    }
+
+    const digits = cardNumber.replace(/\s/g, '');
+
+    navigation.navigate('PaymentSummary', {
+      productId,
+      quantity,
+      customer,
+      card: {
+        brand,
+        lastFourDigits: digits.slice(-4),
+        cardHolder,
+        expiryDate,
+      },
+    });
+  };
+
+  return (
+    <ScreenContainer>
+      <Text style={styles.title}>Datos de la tarjeta</Text>
+
+      <TextField
+        label="Nombre en la tarjeta"
+        value={cardHolder}
+        onChangeText={setCardHolder}
+        error={errors.cardHolder}
+        autoCapitalize="words"
+      />
+
+      <TextField
+        label="Número de tarjeta"
+        value={cardNumber}
+        onChangeText={value => setCardNumber(formatCardNumber(value))}
+        error={errors.cardNumber}
+        keyboardType="number-pad"
+        maxLength={23}
+      />
+      <CardBrandBadge brand={brand} />
+
+      <View style={styles.row}>
+        <View style={styles.half}>
+          <TextField
+            label="Vencimiento (MM/YY)"
+            value={expiryDate}
+            onChangeText={value => setExpiryDate(formatExpiryDate(value))}
+            error={errors.expiryDate}
+            keyboardType="number-pad"
+            maxLength={5}
+          />
+        </View>
+        <View style={styles.half}>
+          <TextField
+            label="CVV"
+            value={cvv}
+            onChangeText={setCvv}
+            error={errors.cvv}
+            keyboardType="number-pad"
+            maxLength={4}
+            secureTextEntry
+          />
+        </View>
+      </View>
+
+      <Button title="Continuar" onPress={handleContinue} />
+    </ScreenContainer>
+  );
+}
+
+const styles = StyleSheet.create({
+  title: {
+    fontSize: typography.heading.fontSize,
+    fontWeight: '700',
+    color: colors.text,
+    marginBottom: spacing.md,
+  },
+  row: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  half: {
+    flex: 1,
+  },
+});
+
+export default CardFormScreen;

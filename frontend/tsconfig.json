@@ -13,6 +13,7 @@
       "@hooks/*": ["src/hooks/*"],
       "@storage/*": ["src/storage/*"],
       "@utils/*": ["src/utils/*"],
+      "@theme": ["src/theme/index.ts"],
       "@theme/*": ["src/theme/*"],
       "@assets/*": ["src/assets/*"]
     }
