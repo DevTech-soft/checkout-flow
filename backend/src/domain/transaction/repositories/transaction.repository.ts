@@ -9,4 +9,7 @@ export abstract class TransactionRepository {
     gatewayTransactionId?: string,
   ): Promise<Transaction>;
   abstract findById(id: string): Promise<Transaction | null>;
+  abstract findByGatewayTransactionId(
+    gatewayTransactionId: string,
+  ): Promise<Transaction | null>;
 }

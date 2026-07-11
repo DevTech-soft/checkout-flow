@@ -11,6 +11,7 @@ describe('PrismaTransactionRepository', () => {
       create: jest.Mock;
       update: jest.Mock;
       findUnique: jest.Mock;
+      findFirst: jest.Mock;
     };
   };
 
@@ -37,6 +38,7 @@ describe('PrismaTransactionRepository', () => {
           gatewayTransactionId: 'gw-1',
         }),
         findUnique: jest.fn().mockResolvedValue(record),
+        findFirst: jest.fn().mockResolvedValue(record),
       },
     };
     repository = new PrismaTransactionRepository(
@@ -92,5 +94,22 @@ describe('PrismaTransactionRepository', () => {
     prisma.transaction.findUnique.mockResolvedValue(null);
 
     await expect(repository.findById('missing')).resolves.toBeNull();
+  });
+
+  it('finds a transaction by its gateway transaction id', async () => {
+    const transaction = await repository.findByGatewayTransactionId('gw-1');
+
+    expect(prisma.transaction.findFirst).toHaveBeenCalledWith({
+      where: { gatewayTransactionId: 'gw-1' },
+    });
+    expect(transaction?.id).toBe('tx-1');
+  });
+
+  it('returns null when no transaction matches the gateway transaction id', async () => {
+    prisma.transaction.findFirst.mockResolvedValue(null);
+
+    await expect(
+      repository.findByGatewayTransactionId('missing'),
+    ).resolves.toBeNull();
   });
 });

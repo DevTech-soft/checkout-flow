@@ -1,4 +1,7 @@
+jest.mock('@services/products/productService');
+
 import { configureStore } from '@reduxjs/toolkit';
+import { getProducts } from '@services/products/productService';
 import productsReducer, {
   fetchProducts,
   selectProductById,
@@ -6,13 +9,34 @@ import productsReducer, {
   selectProductsError,
   selectProductsStatus,
 } from './products.slice';
+import type { Product } from '@services/products/product.types';
 import type { RootState } from '@redux/store';
+
+const mockedGetProducts = getProducts as jest.MockedFunction<
+  typeof getProducts
+>;
+
+const catalog: Product[] = [
+  {
+    id: '1',
+    name: 'Audífonos Bluetooth',
+    description: 'Audífonos inalámbricos con cancelación de ruido.',
+    priceInCents: 12000000,
+    currency: 'COP',
+    stock: 10,
+    imageUrl: 'https://placehold.co/400x400?text=Audifonos',
+  },
+];
 
 function buildStore() {
   return configureStore({ reducer: { products: productsReducer } });
 }
 
 describe('products.slice', () => {
+  beforeEach(() => {
+    mockedGetProducts.mockReset().mockResolvedValue(catalog);
+  });
+
   it('starts idle with no products', () => {
     const store = buildStore();
     const state = store.getState() as unknown as RootState;

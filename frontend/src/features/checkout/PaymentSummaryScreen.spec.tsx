@@ -2,12 +2,17 @@ import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import PaymentSummaryScreen from './PaymentSummaryScreen';
 import { renderWithProviders } from '../../tests/renderWithProviders';
+import { createTransaction } from '@services/transactions/transactionService';
 import type { RootStackParamList } from '@navigation/routes';
 import type { RootState } from '@redux/store';
 
+jest.mock('@services/transactions/transactionService');
+
 type Props = NativeStackScreenProps<RootStackParamList, 'PaymentSummary'>;
 
-jest.useFakeTimers();
+const mockedCreateTransaction = createTransaction as jest.MockedFunction<
+  typeof createTransaction
+>;
 
 function buildProps(navigate: jest.Mock): Props {
   return {
@@ -50,6 +55,7 @@ const preloadedState: Partial<RootState> = {
       lastFourDigits: '4242',
       cardHolder: 'Jane Doe',
       expiryDate: '12/99',
+      token: 'tok_test_123',
     },
   },
 };
@@ -66,18 +72,33 @@ describe('PaymentSummaryScreen', () => {
   });
 
   it('submits the payment and navigates to TransactionResult', async () => {
+    mockedCreateTransaction.mockResolvedValue({
+      id: 'tx-1',
+      status: 'APPROVED',
+      amountInCents: 24000000,
+      currency: 'COP',
+      productId: '1',
+      createdAt: '2026-07-10T00:00:00.000Z',
+    });
     const navigate = jest.fn();
     const { store } = await renderWithProviders(
       <PaymentSummaryScreen {...buildProps(navigate)} />,
       { preloadedState },
     );
 
-    fireEvent.press(screen.getByText('Pagar'));
-    jest.advanceTimersByTime(800);
+    await fireEvent.press(screen.getByText('Pagar'));
 
     await waitFor(() => {
       expect(navigate).toHaveBeenCalledWith('TransactionResult');
     });
     expect(store.getState().transaction.status).toBe('APPROVED');
+    expect(mockedCreateTransaction).toHaveBeenCalledWith({
+      productId: '1',
+      quantity: 2,
+      cardToken: 'tok_test_123',
+      fullName: 'Jane Doe',
+      email: 'jane@example.com',
+      phoneNumber: '3001234567',
+    });
   });
 });

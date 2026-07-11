@@ -1,6 +1,7 @@
 import type { ReactElement } from 'react';
 import { render } from '@testing-library/react-native';
 import { Provider } from 'react-redux';
+import { ToastProvider } from '@components/ToastProvider';
 import { createAppStore } from '@redux/store';
 import type { RootState } from '@redux/store';
 
@@ -16,6 +17,10 @@ export async function renderWithProviders(
 
   return {
     store,
-    ...(await render(<Provider store={store}>{ui}</Provider>)),
+    ...(await render(
+      <Provider store={store}>
+        <ToastProvider>{ui}</ToastProvider>
+      </Provider>,
+    )),
   };
 }

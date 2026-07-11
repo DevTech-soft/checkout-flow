@@ -8,6 +8,7 @@ export type CardSummary = {
   lastFourDigits: string;
   cardHolder: string;
   expiryDate: string;
+  token: string;
 };
 
 export interface CardState {

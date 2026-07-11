@@ -12,6 +12,7 @@ const summary: CardSummary = {
   lastFourDigits: '4242',
   cardHolder: 'Jane Doe',
   expiryDate: '12/28',
+  token: 'tok_test_123',
 };
 
 describe('card.slice', () => {

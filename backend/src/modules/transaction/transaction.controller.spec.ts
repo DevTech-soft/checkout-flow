@@ -1,10 +1,12 @@
 import { CreateTransactionDto } from '@application/transaction/dto/create-transaction.dto';
+import { PaymentWebhookEventDto } from '@application/transaction/dto/payment-webhook-event.dto';
 import { TransactionController } from './transaction.controller';
 
 describe('TransactionController', () => {
   let controller: TransactionController;
   let createTransactionUseCase: { execute: jest.Mock };
   let getTransactionStatusUseCase: { execute: jest.Mock };
+  let handlePaymentWebhookUseCase: { execute: jest.Mock };
 
   const dto: CreateTransactionDto = {
     productId: 'product-1',
@@ -15,6 +17,13 @@ describe('TransactionController', () => {
     phoneNumber: '3001234567',
   };
 
+  const webhookEvent: PaymentWebhookEventDto = {
+    event: 'transaction.updated',
+    data: { transaction: { id: 'gw-1', status: 'APPROVED' } },
+    signature: { properties: ['transaction.id'], checksum: 'valid' },
+    timestamp: 1700000000,
+  };
+
   beforeEach(() => {
     createTransactionUseCase = {
       execute: jest.fn().mockResolvedValue({ id: 'tx-1' }),
@@ -22,10 +31,14 @@ describe('TransactionController', () => {
     getTransactionStatusUseCase = {
       execute: jest.fn().mockResolvedValue({ id: 'tx-1' }),
     };
+    handlePaymentWebhookUseCase = {
+      execute: jest.fn().mockResolvedValue(undefined),
+    };
 
     controller = new TransactionController(
       createTransactionUseCase,
       getTransactionStatusUseCase,
+      handlePaymentWebhookUseCase,
     );
   });
 
@@ -39,5 +52,14 @@ describe('TransactionController', () => {
     await controller.findOne('tx-1');
 
     expect(getTransactionStatusUseCase.execute).toHaveBeenCalledWith('tx-1');
+  });
+
+  it('delegates webhook handling to HandlePaymentWebhookUseCase', async () => {
+    const result = await controller.handleWebhook(webhookEvent);
+
+    expect(handlePaymentWebhookUseCase.execute).toHaveBeenCalledWith(
+      webhookEvent,
+    );
+    expect(result).toEqual({ received: true });
   });
 });

@@ -5,8 +5,11 @@ import ScreenContainer from '@components/ScreenContainer';
 import Button from '@components/Button';
 import TextField from '@components/TextField';
 import CardBrandBadge from '@components/CardBrandBadge';
+import ErrorBanner from '@components/ErrorBanner';
 import { useAppDispatch } from '@hooks/redux';
+import { useToast } from '@components/ToastProvider';
 import { setCard } from '@redux/slices/card.slice';
+import { tokenizeCard } from '@services/gateway/wompiClient';
 import { detectCardBrand } from '@utils/cardBrand';
 import { formatCardNumber, formatExpiryDate } from '@utils/cardFormat';
 import {
@@ -26,16 +29,19 @@ type FormErrors = Partial<
 
 function CardFormScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
+  const { showToast } = useToast();
 
   const [cardHolder, setCardHolder] = useState('');
   const [cardNumber, setCardNumber] = useState('');
   const [expiryDate, setExpiryDate] = useState('');
   const [cvv, setCvv] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
+  const [tokenizing, setTokenizing] = useState(false);
+  const [tokenizeError, setTokenizeError] = useState<string | null>(null);
 
   const brand = useMemo(() => detectCardBrand(cardNumber), [cardNumber]);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
     const nextErrors: FormErrors = {
       cardHolder: validateFullName(cardHolder) ?? undefined,
       cardNumber: validateCardNumber(cardNumber) ?? undefined,
@@ -48,17 +54,39 @@ function CardFormScreen({ navigation }: Props) {
       return;
     }
 
-    const digits = cardNumber.replace(/\s/g, '');
+    setTokenizeError(null);
+    setTokenizing(true);
 
-    dispatch(
-      setCard({
-        brand,
-        lastFourDigits: digits.slice(-4),
-        cardHolder,
+    try {
+      const token = await tokenizeCard({
+        cardNumber,
+        cvv,
         expiryDate,
-      }),
-    );
-    navigation.navigate('PaymentSummary');
+        cardHolder,
+      });
+
+      const digits = cardNumber.replace(/\s/g, '');
+
+      dispatch(
+        setCard({
+          brand,
+          lastFourDigits: digits.slice(-4),
+          cardHolder,
+          expiryDate,
+          token,
+        }),
+      );
+      navigation.navigate('PaymentSummary');
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'No pudimos validar tu tarjeta. Intenta nuevamente.';
+      setTokenizeError(message);
+      showToast(message);
+    } finally {
+      setTokenizing(false);
+    }
   };
 
   return (
@@ -107,7 +135,14 @@ function CardFormScreen({ navigation }: Props) {
         </View>
       </View>
 
-      <Button title="Continuar" onPress={handleContinue} />
+      {tokenizeError ? <ErrorBanner message={tokenizeError} /> : null}
+
+      <Button
+        title="Continuar"
+        onPress={handleContinue}
+        loading={tokenizing}
+        disabled={tokenizing}
+      />
     </ScreenContainer>
   );
 }
