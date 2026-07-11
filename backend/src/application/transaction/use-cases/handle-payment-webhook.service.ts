@@ -1,9 +1,11 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { ProductRepository } from '@domain/product/repositories/product.repository';
 import { TransactionRepository } from '@domain/transaction/repositories/transaction.repository';
 import { PaymentGatewayWebhookVerifier } from '@infrastructure/gateways/payment-gateway-webhook.verifier';
 import { PaymentWebhookEventDto } from '@application/transaction/dto/payment-webhook-event.dto';
 import { mapGatewayStatus } from '@application/transaction/mappers/gateway-status.mapper';
 import { HandlePaymentWebhookUseCase } from '@application/transaction/use-cases/handle-payment-webhook.use-case';
+import { decrementStockForApprovedTransaction } from '@application/transaction/decrement-stock-for-approved-transaction';
 
 const TRANSACTION_UPDATED_EVENT = 'transaction.updated';
 
@@ -13,6 +15,7 @@ export class HandlePaymentWebhookService
 {
   constructor(
     private readonly transactionRepository: TransactionRepository,
+    private readonly productRepository: ProductRepository,
     private readonly verifier: PaymentGatewayWebhookVerifier,
   ) {}
 
@@ -40,9 +43,15 @@ export class HandlePaymentWebhookService
       return;
     }
 
-    await this.transactionRepository.updateStatus(
+    const previousStatus = transaction.status;
+    const updated = await this.transactionRepository.updateStatus(
       transaction.id,
       mapGatewayStatus(gatewayTransaction.status),
+    );
+    await decrementStockForApprovedTransaction(
+      this.productRepository,
+      updated,
+      previousStatus,
     );
   }
 }

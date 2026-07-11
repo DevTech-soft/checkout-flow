@@ -1,4 +1,5 @@
 import { UnauthorizedException } from '@nestjs/common';
+import { ProductRepository } from '@domain/product/repositories/product.repository';
 import { TransactionRepository } from '@domain/transaction/repositories/transaction.repository';
 import { TransactionStatus } from '@domain/transaction/transaction-status.enum';
 import { Transaction } from '@domain/transaction/entities/transaction.entity';
@@ -14,11 +15,23 @@ describe('HandlePaymentWebhookService', () => {
     findByGatewayTransactionId: jest.Mock;
     updateStatus: jest.Mock;
   };
+  let productRepository: { decrementStock: jest.Mock };
   let verifier: { verify: jest.Mock };
 
   const existingTransaction = new Transaction(
     'tx-1',
     TransactionStatus.PENDING,
+    Money.fromCents(10000, 'COP'),
+    [new TransactionItem('product-1', 1, 10000)],
+    'customer-1',
+    'gw-1',
+    new Date(),
+    new Date(),
+  );
+
+  const approvedTransaction = new Transaction(
+    'tx-1',
+    TransactionStatus.APPROVED,
     Money.fromCents(10000, 'COP'),
     [new TransactionItem('product-1', 1, 10000)],
     'customer-1',
@@ -39,12 +52,14 @@ describe('HandlePaymentWebhookService', () => {
       findByGatewayTransactionId: jest
         .fn()
         .mockResolvedValue(existingTransaction),
-      updateStatus: jest.fn().mockResolvedValue(existingTransaction),
+      updateStatus: jest.fn().mockResolvedValue(approvedTransaction),
     };
+    productRepository = { decrementStock: jest.fn().mockResolvedValue(undefined) };
     verifier = { verify: jest.fn().mockReturnValue(true) };
 
     service = new HandlePaymentWebhookService(
       transactionRepository as unknown as TransactionRepository,
+      productRepository as unknown as ProductRepository,
       verifier as unknown as PaymentGatewayWebhookVerifier,
     );
   });
@@ -94,5 +109,35 @@ describe('HandlePaymentWebhookService', () => {
       'tx-1',
       TransactionStatus.APPROVED,
     );
+  });
+
+  it('decrements stock when the webhook approves a pending transaction', async () => {
+    await service.execute(event);
+
+    expect(productRepository.decrementStock).toHaveBeenCalledWith(
+      'product-1',
+      1,
+    );
+  });
+
+  it('does not decrement stock again when the transaction was already approved', async () => {
+    transactionRepository.findByGatewayTransactionId.mockResolvedValue(
+      approvedTransaction,
+    );
+
+    await service.execute(event);
+
+    expect(productRepository.decrementStock).not.toHaveBeenCalled();
+  });
+
+  it('does not decrement stock when the webhook reports a non-approved status', async () => {
+    transactionRepository.updateStatus.mockResolvedValue(existingTransaction);
+
+    await service.execute({
+      ...event,
+      data: { transaction: { id: 'gw-1', status: 'DECLINED' } },
+    });
+
+    expect(productRepository.decrementStock).not.toHaveBeenCalled();
   });
 });

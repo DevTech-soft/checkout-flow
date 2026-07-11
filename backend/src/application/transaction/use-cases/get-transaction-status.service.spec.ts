@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
+import { ProductRepository } from '@domain/product/repositories/product.repository';
 import { TransactionRepository } from '@domain/transaction/repositories/transaction.repository';
 import { Transaction } from '@domain/transaction/entities/transaction.entity';
 import { TransactionItem } from '@domain/transaction/entities/transaction-item.entity';
@@ -14,16 +15,19 @@ describe('GetTransactionStatusService', () => {
     findById: jest.Mock;
     updateStatus: jest.Mock;
   };
+  let productRepository: { decrementStock: jest.Mock };
   let paymentGateway: { getTransactionStatus: jest.Mock };
 
   beforeEach(async () => {
     transactionRepository = { findById: jest.fn(), updateStatus: jest.fn() };
+    productRepository = { decrementStock: jest.fn().mockResolvedValue(undefined) };
     paymentGateway = { getTransactionStatus: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         GetTransactionStatusService,
         { provide: TransactionRepository, useValue: transactionRepository },
+        { provide: ProductRepository, useValue: productRepository },
         { provide: PaymentGatewayPort, useValue: paymentGateway },
       ],
     }).compile();
@@ -104,6 +108,30 @@ describe('GetTransactionStatusService', () => {
       'tx-1',
       TransactionStatus.APPROVED,
     );
+    expect(productRepository.decrementStock).toHaveBeenCalledWith(
+      'product-1',
+      1,
+    );
+  });
+
+  it('does not decrement stock again when the transaction was already approved', async () => {
+    const createdAt = new Date('2026-01-01T00:00:00Z');
+    const alreadyApproved = new Transaction(
+      'tx-1',
+      TransactionStatus.APPROVED,
+      Money.fromCents(50000, 'COP'),
+      [new TransactionItem('product-1', 1, 50000)],
+      'customer-1',
+      'gateway-tx-1',
+      createdAt,
+      createdAt,
+    );
+    transactionRepository.findById.mockResolvedValue(alreadyApproved);
+
+    await service.execute('tx-1');
+
+    expect(paymentGateway.getTransactionStatus).not.toHaveBeenCalled();
+    expect(productRepository.decrementStock).not.toHaveBeenCalled();
   });
 
   it('keeps PENDING without updating when the gateway still reports PENDING', async () => {
