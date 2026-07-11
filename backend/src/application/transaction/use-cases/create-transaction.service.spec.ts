@@ -11,6 +11,7 @@ import { PaymentGatewayPort } from '@application/ports/payment-gateway.port';
 import { Product } from '@domain/product/entities/product.entity';
 import { Customer } from '@domain/customer/entities/customer.entity';
 import { Transaction } from '@domain/transaction/entities/transaction.entity';
+import { TransactionItem } from '@domain/transaction/entities/transaction-item.entity';
 import { TransactionStatus } from '@domain/transaction/transaction-status.enum';
 import { Money } from '@domain/shared/value-objects/money.vo';
 import { CreateTransactionDto } from '@application/transaction/dto/create-transaction.dto';
@@ -36,8 +37,7 @@ describe('CreateTransactionService', () => {
   );
 
   const input: CreateTransactionDto = {
-    productId: 'product-1',
-    quantity: 1,
+    items: [{ productId: 'product-1', quantity: 1 }],
     cardToken: 'tok_test_123',
     fullName: 'Jane Doe',
     email: 'jane@example.com',
@@ -74,7 +74,7 @@ describe('CreateTransactionService', () => {
                 id,
                 status,
                 Money.fromCents(10000, 'COP'),
-                product.id,
+                [new TransactionItem(product.id, 1, 10000)],
                 'customer-1',
                 gatewayTransactionId ?? null,
                 new Date(),

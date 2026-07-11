@@ -1,6 +1,7 @@
 import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import productsReducer from './products.slice';
 import orderReducer, { setOrder } from './order.slice';
+import cartReducer from './cart.slice';
 import checkoutReducer, { setCustomer } from './checkout.slice';
 import cardReducer, { setCard } from './card.slice';
 import transactionReducer, {
@@ -35,6 +36,7 @@ function buildStore(preloadedState?: Partial<RootState>) {
   const reducer = combineReducers({
     products: productsReducer,
     order: orderReducer,
+    cart: cartReducer,
     checkout: checkoutReducer,
     card: cardReducer,
     transaction: transactionReducer,
@@ -57,7 +59,7 @@ describe('transaction.slice', () => {
       status: null,
       amountInCents: null,
       currency: null,
-      productId: null,
+      items: [],
       createdAt: null,
       requestStatus: 'idle',
       error: null,
@@ -100,7 +102,7 @@ describe('transaction.slice', () => {
     const store = buildStore({
       products: { items: [product], status: 'succeeded', error: null },
     });
-    store.dispatch(setOrder({ productId: '1', quantity: 2 }));
+    store.dispatch(setOrder([{ productId: '1', quantity: 2 }]));
 
     await store.dispatch(submitTransaction());
     const state = store.getState() as unknown as RootState;
@@ -115,7 +117,7 @@ describe('transaction.slice', () => {
     const store = buildStore({
       products: { items: [product], status: 'succeeded', error: null },
     });
-    store.dispatch(setOrder({ productId: '1', quantity: 2 }));
+    store.dispatch(setOrder([{ productId: '1', quantity: 2 }]));
     store.dispatch(
       setCustomer({
         fullName: 'Jane Doe',
@@ -139,22 +141,21 @@ describe('transaction.slice', () => {
       status: 'APPROVED',
       amountInCents: 24000000,
       currency: 'COP',
-      productId: '1',
+      items: [{ productId: '1', quantity: 2, unitPriceInCents: 12000000 }],
       createdAt: '2026-07-10T00:00:00.000Z',
     });
 
     const store = buildStore({
       products: { items: [product], status: 'succeeded', error: null },
     });
-    store.dispatch(setOrder({ productId: '1', quantity: 2 }));
+    store.dispatch(setOrder([{ productId: '1', quantity: 2 }]));
     withCustomerAndCard(store);
 
     await store.dispatch(submitTransaction());
     const state = store.getState() as unknown as RootState;
 
     expect(mockedCreateTransaction).toHaveBeenCalledWith({
-      productId: '1',
-      quantity: 2,
+      items: [{ productId: '1', quantity: 2 }],
       cardToken: 'tok_test_123',
       fullName: 'Jane Doe',
       email: 'jane@example.com',
@@ -165,7 +166,7 @@ describe('transaction.slice', () => {
       status: 'APPROVED',
       amountInCents: 24000000,
       currency: 'COP',
-      productId: '1',
+      items: [{ productId: '1', quantity: 2, unitPriceInCents: 12000000 }],
       createdAt: '2026-07-10T00:00:00.000Z',
       requestStatus: 'succeeded',
       error: null,
@@ -180,7 +181,7 @@ describe('transaction.slice', () => {
     const store = buildStore({
       products: { items: [product], status: 'succeeded', error: null },
     });
-    store.dispatch(setOrder({ productId: '1', quantity: 2 }));
+    store.dispatch(setOrder([{ productId: '1', quantity: 2 }]));
     withCustomerAndCard(store);
 
     await store.dispatch(submitTransaction());
@@ -201,7 +202,7 @@ describe('transaction.slice', () => {
         status: 'APPROVED',
         amountInCents: 24000000,
         currency: 'COP',
-        productId: '1',
+        items: [{ productId: '1', quantity: 2, unitPriceInCents: 12000000 }],
         createdAt: '2026-07-10T00:00:00.000Z',
       }),
     );
@@ -219,7 +220,7 @@ describe('transaction.slice', () => {
       status: 'APPROVED',
       amountInCents: 24000000,
       currency: 'COP',
-      productId: '1',
+      items: [{ productId: '1', quantity: 2, unitPriceInCents: 12000000 }],
       createdAt: '2026-07-10T00:00:00.000Z',
     };
 
@@ -239,7 +240,7 @@ describe('transaction.slice', () => {
         status: null,
         amountInCents: null,
         currency: null,
-        productId: null,
+        items: [],
         createdAt: null,
       }),
     );

@@ -1,5 +1,6 @@
 import { PrismaService } from '@infrastructure/database/prisma.service';
 import { Transaction } from '@domain/transaction/entities/transaction.entity';
+import { TransactionItem } from '@domain/transaction/entities/transaction-item.entity';
 import { TransactionStatus } from '@domain/transaction/transaction-status.enum';
 import { Money } from '@domain/shared/value-objects/money.vo';
 import { PrismaTransactionRepository } from './prisma-transaction.repository';
@@ -21,11 +22,20 @@ describe('PrismaTransactionRepository', () => {
     status: TransactionStatus.PENDING,
     amountInCents: 10000,
     currency: 'COP',
-    productId: 'product-1',
     customerId: 'customer-1',
     gatewayTransactionId: null,
     createdAt: now,
     updatedAt: now,
+    items: [
+      {
+        id: 'item-1',
+        transactionId: 'tx-1',
+        productId: 'product-1',
+        quantity: 1,
+        unitPriceInCents: 10000,
+        createdAt: now,
+      },
+    ],
   };
 
   beforeEach(() => {
@@ -46,12 +56,12 @@ describe('PrismaTransactionRepository', () => {
     );
   });
 
-  it('creates a transaction through prisma using the provided id', async () => {
+  it('creates a transaction with its items through prisma using the provided id', async () => {
     const transaction = new Transaction(
       'tx-1',
       TransactionStatus.PENDING,
       Money.fromCents(10000, 'COP'),
-      'product-1',
+      [new TransactionItem('product-1', 1, 10000)],
       'customer-1',
       null,
       now,
@@ -66,10 +76,15 @@ describe('PrismaTransactionRepository', () => {
         status: TransactionStatus.PENDING,
         amountInCents: 10000,
         currency: 'COP',
-        productId: 'product-1',
         customerId: 'customer-1',
         gatewayTransactionId: null,
+        items: {
+          create: [
+            { productId: 'product-1', quantity: 1, unitPriceInCents: 10000 },
+          ],
+        },
       },
+      include: { items: true },
     });
   });
 
@@ -86,6 +101,7 @@ describe('PrismaTransactionRepository', () => {
         status: TransactionStatus.APPROVED,
         gatewayTransactionId: 'gw-1',
       },
+      include: { items: true },
     });
     expect(result.status).toBe(TransactionStatus.APPROVED);
   });
@@ -95,6 +111,9 @@ describe('PrismaTransactionRepository', () => {
 
     expect(transaction?.id).toBe('tx-1');
     expect(transaction?.status).toBe(TransactionStatus.PENDING);
+    expect(transaction?.items).toEqual([
+      new TransactionItem('product-1', 1, 10000),
+    ]);
   });
 
   it('returns null when a transaction is not found', async () => {
@@ -108,6 +127,7 @@ describe('PrismaTransactionRepository', () => {
 
     expect(prisma.transaction.findFirst).toHaveBeenCalledWith({
       where: { gatewayTransactionId: 'gw-1' },
+      include: { items: true },
     });
     expect(transaction?.id).toBe('tx-1');
   });

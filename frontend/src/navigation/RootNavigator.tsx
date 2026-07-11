@@ -2,6 +2,8 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import SplashScreen from '@features/splash/SplashScreen';
 import HomeScreen from '@features/products/HomeScreen';
 import ProductDetailScreen from '@features/products/ProductDetailScreen';
+import CartScreen from '@features/cart/CartScreen';
+import CartHeaderButton from '@components/CartHeaderButton';
 import CheckoutScreen from '@features/checkout/CheckoutScreen';
 import CardFormScreen from '@features/checkout/CardFormScreen';
 import PaymentSummaryScreen from '@features/checkout/PaymentSummaryScreen';
@@ -21,12 +23,23 @@ function RootNavigator() {
       <Stack.Screen
         name="Home"
         component={HomeScreen}
-        options={{ title: 'Productos', headerTitleAlign: 'center' }}
+        options={({ navigation }) => ({
+          title: 'Productos',
+          headerTitleAlign: 'center',
+          headerRight: () => (
+            <CartHeaderButton onPress={() => navigation.navigate('Cart')} />
+          ),
+        })}
       />
       <Stack.Screen
         name="ProductDetail"
         component={ProductDetailScreen}
         options={{ title: 'Detalle' }}
+      />
+      <Stack.Screen
+        name="Cart"
+        component={CartScreen}
+        options={{ title: 'Carrito', headerTitleAlign: 'center' }}
       />
       <Stack.Screen
         name="Checkout"

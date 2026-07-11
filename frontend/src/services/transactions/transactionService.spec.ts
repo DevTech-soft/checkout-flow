@@ -9,8 +9,7 @@ import type { CreateTransactionInput } from './transaction.types';
 const mockedHttpClient = httpClient as jest.Mocked<typeof httpClient>;
 
 const input: CreateTransactionInput = {
-  productId: '1',
-  quantity: 2,
+  items: [{ productId: '1', quantity: 2 }],
   cardToken: 'tok_test_123',
   fullName: 'Jane Doe',
   email: 'jane@example.com',
@@ -22,7 +21,7 @@ const approvedResult = {
   status: 'APPROVED' as const,
   amountInCents: 24000000,
   currency: 'COP',
-  productId: '1',
+  items: [{ productId: '1', quantity: 2, unitPriceInCents: 12000000 }],
   createdAt: '2026-07-10T00:00:00.000Z',
 };
 
@@ -43,8 +42,7 @@ describe('transactionService', () => {
     const result = await createTransaction(input);
 
     expect(mockedHttpClient.post).toHaveBeenCalledWith('/transactions', {
-      productId: '1',
-      quantity: 2,
+      items: [{ productId: '1', quantity: 2 }],
       cardToken: 'tok_test_123',
       fullName: 'Jane Doe',
       email: 'jane@example.com',

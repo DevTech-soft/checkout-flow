@@ -37,8 +37,7 @@ export async function createTransaction(
   input: CreateTransactionInput,
 ): Promise<TransactionResult> {
   const result = await httpClient.post<TransactionResult>('/transactions', {
-    productId: input.productId,
-    quantity: input.quantity,
+    items: input.items,
     cardToken: input.cardToken,
     fullName: input.fullName,
     email: input.email,

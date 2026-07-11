@@ -4,6 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { useAppDispatch } from '@hooks/redux';
 import { loadPersistedState } from '@redux/persistence/persistedState';
 import { hydrateOrder } from '@redux/slices/order.slice';
+import { hydrateCart } from '@redux/slices/cart.slice';
 import { hydrateCheckout } from '@redux/slices/checkout.slice';
 import { hydrateTransaction } from '@redux/slices/transaction.slice';
 import { colors, typography } from '@theme';
@@ -25,6 +26,7 @@ function SplashScreen({ navigation }: Props) {
         const persisted = await loadPersistedState();
         if (persisted) {
           dispatch(hydrateOrder(persisted.order));
+          dispatch(hydrateCart(persisted.cart));
           dispatch(hydrateCheckout(persisted.checkout));
           dispatch(hydrateTransaction(persisted.transaction));
         }

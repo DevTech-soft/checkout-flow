@@ -16,34 +16,38 @@ describe('order.slice', () => {
     const store = buildStore();
     const state = store.getState() as unknown as RootState;
 
-    expect(selectOrder(state)).toEqual({ productId: null, quantity: null });
+    expect(selectOrder(state)).toEqual({ items: [] });
   });
 
-  it('stores the product and quantity on setOrder', () => {
+  it('stores the items on setOrder', () => {
     const store = buildStore();
 
-    store.dispatch(setOrder({ productId: '1', quantity: 2 }));
+    store.dispatch(setOrder([{ productId: '1', quantity: 2 }]));
     const state = store.getState() as unknown as RootState;
 
-    expect(selectOrder(state)).toEqual({ productId: '1', quantity: 2 });
+    expect(selectOrder(state)).toEqual({
+      items: [{ productId: '1', quantity: 2 }],
+    });
   });
 
   it('clears the order on clearOrder', () => {
     const store = buildStore();
 
-    store.dispatch(setOrder({ productId: '1', quantity: 2 }));
+    store.dispatch(setOrder([{ productId: '1', quantity: 2 }]));
     store.dispatch(clearOrder());
     const state = store.getState() as unknown as RootState;
 
-    expect(selectOrder(state)).toEqual({ productId: null, quantity: null });
+    expect(selectOrder(state)).toEqual({ items: [] });
   });
 
   it('replaces the whole slice on hydrate', () => {
     const store = buildStore();
 
-    store.dispatch(hydrateOrder({ productId: '2', quantity: 3 }));
+    store.dispatch(hydrateOrder({ items: [{ productId: '2', quantity: 3 }] }));
     const state = store.getState() as unknown as RootState;
 
-    expect(selectOrder(state)).toEqual({ productId: '2', quantity: 3 });
+    expect(selectOrder(state)).toEqual({
+      items: [{ productId: '2', quantity: 3 }],
+    });
   });
 });

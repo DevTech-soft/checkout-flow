@@ -6,8 +6,7 @@ import Button from '@components/Button';
 import TextField from '@components/TextField';
 import ErrorBanner from '@components/ErrorBanner';
 import { useAppDispatch, useAppSelector } from '@hooks/redux';
-import { selectOrder } from '@redux/slices/order.slice';
-import { selectProductById } from '@redux/slices/products.slice';
+import { selectOrderLines, selectOrderTotal } from '@redux/slices/order.slice';
 import { setCustomer } from '@redux/slices/checkout.slice';
 import { formatCurrency } from '@utils/currency';
 import {
@@ -24,8 +23,8 @@ type FormErrors = Partial<Record<'fullName' | 'email' | 'phoneNumber', string>>;
 
 function CheckoutScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
-  const order = useAppSelector(selectOrder);
-  const product = useAppSelector(selectProductById(order.productId));
+  const lines = useAppSelector(selectOrderLines);
+  const total = useAppSelector(selectOrderTotal);
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -49,7 +48,7 @@ function CheckoutScreen({ navigation }: Props) {
     navigation.navigate('CardForm');
   };
 
-  if (!product || !order.quantity) {
+  if (lines.length === 0) {
     return (
       <ScreenContainer>
         <ErrorBanner message="No hay una orden activa. Vuelve a seleccionar un producto." />
@@ -57,16 +56,16 @@ function CheckoutScreen({ navigation }: Props) {
     );
   }
 
-  const total = product.priceInCents * order.quantity;
-
   return (
     <ScreenContainer>
       <Text style={styles.title}>Resumen de compra</Text>
-      <Text style={styles.summaryLine}>
-        {product.name} x{order.quantity}
-      </Text>
+      {lines.map(line => (
+        <Text key={line.product.id} style={styles.summaryLine}>
+          {line.product.name} x{line.quantity}
+        </Text>
+      ))}
       <Text style={styles.total}>
-        {formatCurrency(total, product.currency)}
+        {formatCurrency(total, lines[0].product.currency)}
       </Text>
 
       <Text style={styles.sectionTitle}>Tus datos</Text>

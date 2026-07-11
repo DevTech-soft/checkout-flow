@@ -88,6 +88,26 @@ describe('ProductDetailScreen', () => {
     await fireEvent.press(screen.getByText('Comprar'));
 
     expect(navigate).toHaveBeenCalledWith('Checkout');
-    expect(store.getState().order).toEqual({ productId: '1', quantity: 1 });
+    expect(store.getState().order.items).toEqual([
+      { productId: '1', quantity: 1 },
+    ]);
+  });
+
+  it('adds the product to the cart without navigating away', async () => {
+    const navigate = jest.fn();
+    const { store } = await renderWithProviders(
+      <ProductDetailScreen {...buildProps(navigate, '1')} />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Agregar al carrito')).toBeTruthy();
+    });
+
+    await fireEvent.press(screen.getByText('Agregar al carrito'));
+
+    expect(navigate).not.toHaveBeenCalled();
+    expect(store.getState().cart.items).toEqual([
+      { productId: '1', quantity: 1 },
+    ]);
   });
 });

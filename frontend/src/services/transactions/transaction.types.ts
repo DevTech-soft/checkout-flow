@@ -1,12 +1,22 @@
 export type TransactionStatus = 'PENDING' | 'APPROVED' | 'DECLINED' | 'ERROR';
 
-export interface CreateTransactionInput {
+export interface TransactionLineItem {
   productId: string;
   quantity: number;
+}
+
+export interface CreateTransactionInput {
+  items: TransactionLineItem[];
   cardToken: string;
   fullName: string;
   email: string;
   phoneNumber: string;
+}
+
+export interface TransactionResultItem {
+  productId: string;
+  quantity: number;
+  unitPriceInCents: number;
 }
 
 export interface TransactionResult {
@@ -14,6 +24,6 @@ export interface TransactionResult {
   status: TransactionStatus;
   amountInCents: number;
   currency: string;
-  productId: string;
+  items: TransactionResultItem[];
   createdAt: string;
 }

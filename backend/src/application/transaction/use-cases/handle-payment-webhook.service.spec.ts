@@ -2,6 +2,7 @@ import { UnauthorizedException } from '@nestjs/common';
 import { TransactionRepository } from '@domain/transaction/repositories/transaction.repository';
 import { TransactionStatus } from '@domain/transaction/transaction-status.enum';
 import { Transaction } from '@domain/transaction/entities/transaction.entity';
+import { TransactionItem } from '@domain/transaction/entities/transaction-item.entity';
 import { Money } from '@domain/shared/value-objects/money.vo';
 import { PaymentGatewayWebhookVerifier } from '@infrastructure/gateways/payment-gateway-webhook.verifier';
 import { PaymentWebhookEventDto } from '@application/transaction/dto/payment-webhook-event.dto';
@@ -19,7 +20,7 @@ describe('HandlePaymentWebhookService', () => {
     'tx-1',
     TransactionStatus.PENDING,
     Money.fromCents(10000, 'COP'),
-    'product-1',
+    [new TransactionItem('product-1', 1, 10000)],
     'customer-1',
     'gw-1',
     new Date(),

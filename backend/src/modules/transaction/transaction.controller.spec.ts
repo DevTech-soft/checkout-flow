@@ -9,8 +9,7 @@ describe('TransactionController', () => {
   let handlePaymentWebhookUseCase: { execute: jest.Mock };
 
   const dto: CreateTransactionDto = {
-    productId: 'product-1',
-    quantity: 1,
+    items: [{ productId: 'product-1', quantity: 1 }],
     cardToken: 'tok_test_123',
     fullName: 'Jane Doe',
     email: 'jane@example.com',
