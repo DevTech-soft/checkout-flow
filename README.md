@@ -26,6 +26,18 @@ npm start
 npm run android
 ```
 
+## Proceso de pago
+
+Flujo completo de compra, de punta a punta, tal como lo ve el usuario en la app:
+
+| | |
+|---|---|
+| **1. Catálogo** — el usuario elige un producto del listado. | ![Catálogo de productos](docs/screenshots/01-catalogo-productos.jpeg) |
+| **2. Datos de la tarjeta** — el formulario de tarjeta muestra una preview en vivo que se va llenando con el número, titular y vencimiento a medida que se escriben. | ![Datos de la tarjeta con preview en vivo](docs/screenshots/02-datos-tarjeta.jpeg) |
+| **3. Resumen de pago** — producto, datos de contacto, método de pago (número enmascarado) y desglose del total antes de confirmar. | ![Resumen de pago](docs/screenshots/03-resumen-pago.jpeg) |
+| **4. Procesando el pago** — overlay no descartable mientras se crea la transacción: bloquea el gesto de retroceso, la flecha del header y el botón físico de retroceso en Android para evitar que el usuario abandone la pantalla a mitad del proceso. | ![Overlay de procesamiento del pago](docs/screenshots/04-procesando-pago.jpeg) |
+| **5. Resultado** — confirmación del pago aprobado (o del error, si el gateway lo rechaza). | ![Pago exitoso](docs/screenshots/05-pago-exitoso.jpeg) |
+
 ## Pruebas unitarias
 
 Cada proyecto corre su propia suite con Jest de forma independiente.
