@@ -12,6 +12,7 @@ describe('envValidationSchema', () => {
     PAYMENT_GATEWAY_PUBLIC_KEY: 'pub_test',
     PAYMENT_GATEWAY_PRIVATE_KEY: 'prv_test',
     PAYMENT_GATEWAY_EVENTS_KEY: 'events_test',
+    PAYMENT_GATEWAY_INTEGRITY_KEY: 'integrity_test',
   };
 
   const incompleteEnv = {

@@ -33,4 +33,9 @@ export class PaymentGatewayAdapter implements PaymentGatewayPort {
       status: transaction.status,
     };
   }
+
+  async getTransactionStatus(gatewayTransactionId: string): Promise<string> {
+    const transaction = await this.client.getTransaction(gatewayTransactionId);
+    return transaction.status;
+  }
 }

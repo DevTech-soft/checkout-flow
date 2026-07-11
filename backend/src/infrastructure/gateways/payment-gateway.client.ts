@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
@@ -27,6 +28,15 @@ export class PaymentGatewayClient {
     return this.configService.get<string>('paymentGateway.privateKey')!;
   }
 
+  private get integrityKey(): string {
+    return this.configService.get<string>('paymentGateway.integrityKey')!;
+  }
+
+  private buildIntegritySignature(payload: CreateGatewayTransactionPayload): string {
+    const raw = `${payload.reference}${payload.amount_in_cents}${payload.currency}${this.integrityKey}`;
+    return createHash('sha256').update(raw).digest('hex');
+  }
+
   async getAcceptanceToken(): Promise<string> {
     const response = await firstValueFrom(
       this.httpService.get<AcceptanceTokenResponse>(
@@ -42,7 +52,19 @@ export class PaymentGatewayClient {
     const response = await firstValueFrom(
       this.httpService.post<GatewayTransactionResponse>(
         `${this.baseUrl}/transactions`,
-        payload,
+        { ...payload, signature: this.buildIntegritySignature(payload) },
+        { headers: { Authorization: `Bearer ${this.privateKey}` } },
+      ),
+    );
+    return response.data.data;
+  }
+
+  async getTransaction(
+    gatewayTransactionId: string,
+  ): Promise<GatewayTransactionResponse['data']> {
+    const response = await firstValueFrom(
+      this.httpService.get<GatewayTransactionResponse>(
+        `${this.baseUrl}/transactions/${gatewayTransactionId}`,
         { headers: { Authorization: `Bearer ${this.privateKey}` } },
       ),
     );

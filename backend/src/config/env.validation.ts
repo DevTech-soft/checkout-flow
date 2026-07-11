@@ -10,4 +10,5 @@ export const envValidationSchema = Joi.object({
   PAYMENT_GATEWAY_PUBLIC_KEY: Joi.string().required(),
   PAYMENT_GATEWAY_PRIVATE_KEY: Joi.string().required(),
   PAYMENT_GATEWAY_EVENTS_KEY: Joi.string().required(),
+  PAYMENT_GATEWAY_INTEGRITY_KEY: Joi.string().required(),
 });

@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import { of } from 'rxjs';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
@@ -14,6 +15,7 @@ describe('PaymentGatewayClient', () => {
       'paymentGateway.baseUrl': 'https://sandbox.example.com/v1',
       'paymentGateway.publicKey': 'pub_test_123',
       'paymentGateway.privateKey': 'prv_test_123',
+      'paymentGateway.integrityKey': 'integrity_test_123',
     };
     const configService = { get: jest.fn((key: string) => values[key]) };
 
@@ -58,13 +60,34 @@ describe('PaymentGatewayClient', () => {
       },
     };
 
+    const signature = createHash('sha256')
+      .update(`${payload.reference}${payload.amount_in_cents}${payload.currency}integrity_test_123`)
+      .digest('hex');
+
     await expect(client.createTransaction(payload)).resolves.toEqual({
       id: 'gw-1',
       status: 'APPROVED',
     });
     expect(httpService.post).toHaveBeenCalledWith(
       'https://sandbox.example.com/v1/transactions',
-      payload,
+      { ...payload, signature },
+      { headers: { Authorization: 'Bearer prv_test_123' } },
+    );
+  });
+
+  it('fetches a transaction by id with the private key', async () => {
+    httpService.get.mockReturnValue(
+      of({
+        data: { data: { id: 'gw-1', status: 'APPROVED' } },
+      } as AxiosResponse),
+    );
+
+    await expect(client.getTransaction('gw-1')).resolves.toEqual({
+      id: 'gw-1',
+      status: 'APPROVED',
+    });
+    expect(httpService.get).toHaveBeenCalledWith(
+      'https://sandbox.example.com/v1/transactions/gw-1',
       { headers: { Authorization: 'Bearer prv_test_123' } },
     );
   });

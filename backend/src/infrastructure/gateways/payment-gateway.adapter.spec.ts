@@ -3,12 +3,19 @@ import { PaymentGatewayClient } from './payment-gateway.client';
 
 describe('PaymentGatewayAdapter', () => {
   let adapter: PaymentGatewayAdapter;
-  let client: { getAcceptanceToken: jest.Mock; createTransaction: jest.Mock };
+  let client: {
+    getAcceptanceToken: jest.Mock;
+    createTransaction: jest.Mock;
+    getTransaction: jest.Mock;
+  };
 
   beforeEach(() => {
     client = {
       getAcceptanceToken: jest.fn().mockResolvedValue('acceptance-token'),
       createTransaction: jest
+        .fn()
+        .mockResolvedValue({ id: 'gw-tx-1', status: 'APPROVED' }),
+      getTransaction: jest
         .fn()
         .mockResolvedValue({ id: 'gw-tx-1', status: 'APPROVED' }),
     };
@@ -43,5 +50,12 @@ describe('PaymentGatewayAdapter', () => {
       gatewayTransactionId: 'gw-tx-1',
       status: 'APPROVED',
     });
+  });
+
+  it('returns the current status for a gateway transaction id', async () => {
+    await expect(
+      adapter.getTransactionStatus('gw-tx-1'),
+    ).resolves.toBe('APPROVED');
+    expect(client.getTransaction).toHaveBeenCalledWith('gw-tx-1');
   });
 });

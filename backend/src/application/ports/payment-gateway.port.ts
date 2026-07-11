@@ -15,4 +15,5 @@ export abstract class PaymentGatewayPort {
   abstract createTransaction(
     input: CreatePaymentGatewayTransactionInput,
   ): Promise<PaymentGatewayTransactionResult>;
+  abstract getTransactionStatus(gatewayTransactionId: string): Promise<string>;
 }
