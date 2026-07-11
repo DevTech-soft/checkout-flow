@@ -22,6 +22,7 @@ import {
 import { TransactionResultDto } from '@application/transaction/dto/transaction-result.dto';
 import { CreateTransactionUseCase } from '@application/transaction/use-cases/create-transaction.use-case';
 import { mapGatewayStatus } from '@application/transaction/mappers/gateway-status.mapper';
+import { decrementStockForApprovedTransaction } from '@application/transaction/decrement-stock-for-approved-transaction';
 
 @Injectable()
 export class CreateTransactionService implements CreateTransactionUseCase {
@@ -93,14 +94,11 @@ export class CreateTransactionService implements CreateTransactionUseCase {
         gatewayResult.gatewayTransactionId,
       );
 
-      if (status === TransactionStatus.APPROVED) {
-        for (const item of transaction.items) {
-          await this.productRepository.decrementStock(
-            item.productId,
-            item.quantity,
-          );
-        }
-      }
+      await decrementStockForApprovedTransaction(
+        this.productRepository,
+        transaction,
+        TransactionStatus.PENDING,
+      );
     } catch {
       await this.transactionRepository.updateStatus(
         transaction.id,
