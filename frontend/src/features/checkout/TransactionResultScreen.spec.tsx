@@ -27,12 +27,13 @@ function withTransaction(
       status,
       amountInCents: 24000000,
       currency: 'COP',
-      productId: '1',
+      items: [{ productId: '1', quantity: 2, unitPriceInCents: 12000000 }],
       createdAt: '2026-07-10T00:00:00.000Z',
       requestStatus: 'succeeded',
       error: null,
     },
-    order: { productId: '1', quantity: 2 },
+    order: { items: [{ productId: '1', quantity: 2 }] },
+    cart: { items: [{ productId: '2', quantity: 1 }] },
     checkout: {
       customer: {
         fullName: 'Jane Doe',
@@ -86,7 +87,8 @@ describe('TransactionResultScreen', () => {
     });
     const state = store.getState();
     expect(state.transaction.id).toBeNull();
-    expect(state.order).toEqual({ productId: null, quantity: null });
+    expect(state.order).toEqual({ items: [] });
+    expect(state.cart).toEqual({ items: [] });
     expect(state.checkout.customer).toBeNull();
     expect(state.card.card).toBeNull();
   });

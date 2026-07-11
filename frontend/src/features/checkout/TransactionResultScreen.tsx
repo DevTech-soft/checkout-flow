@@ -5,6 +5,7 @@ import Button from '@components/Button';
 import { useAppDispatch, useAppSelector } from '@hooks/redux';
 import { selectTransaction, resetTransaction } from '@redux/slices/transaction.slice';
 import { clearOrder } from '@redux/slices/order.slice';
+import { clearCart } from '@redux/slices/cart.slice';
 import { clearCustomer } from '@redux/slices/checkout.slice';
 import { clearCard } from '@redux/slices/card.slice';
 import { colors, spacing, typography } from '@theme';
@@ -20,6 +21,7 @@ function TransactionResultScreen({ navigation }: Props) {
   const handleGoHome = () => {
     dispatch(resetTransaction());
     dispatch(clearOrder());
+    dispatch(clearCart());
     dispatch(clearCustomer());
     dispatch(clearCard());
     navigation.reset({ index: 0, routes: [{ name: 'Home' }] });

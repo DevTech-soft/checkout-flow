@@ -44,7 +44,11 @@ export class GetTransactionStatusService implements GetTransactionStatusUseCase 
       status: transaction.status,
       amountInCents: transaction.amount.amountInCents,
       currency: transaction.amount.currency,
-      productId: transaction.productId,
+      items: transaction.items.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        unitPriceInCents: item.unitPriceInCents,
+      })),
       createdAt: transaction.createdAt,
     };
   }

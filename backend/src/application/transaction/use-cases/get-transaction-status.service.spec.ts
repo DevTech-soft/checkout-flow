@@ -2,6 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { NotFoundException } from '@nestjs/common';
 import { TransactionRepository } from '@domain/transaction/repositories/transaction.repository';
 import { Transaction } from '@domain/transaction/entities/transaction.entity';
+import { TransactionItem } from '@domain/transaction/entities/transaction-item.entity';
 import { TransactionStatus } from '@domain/transaction/transaction-status.enum';
 import { Money } from '@domain/shared/value-objects/money.vo';
 import { PaymentGatewayPort } from '@application/ports/payment-gateway.port';
@@ -36,7 +37,7 @@ describe('GetTransactionStatusService', () => {
       'tx-1',
       TransactionStatus.APPROVED,
       Money.fromCents(50000, 'COP'),
-      'product-1',
+      [new TransactionItem('product-1', 1, 50000)],
       'customer-1',
       'gateway-tx-1',
       createdAt,
@@ -49,7 +50,7 @@ describe('GetTransactionStatusService', () => {
       status: TransactionStatus.APPROVED,
       amountInCents: 50000,
       currency: 'COP',
-      productId: 'product-1',
+      items: [{ productId: 'product-1', quantity: 1, unitPriceInCents: 50000 }],
       createdAt,
     });
   });
@@ -68,7 +69,7 @@ describe('GetTransactionStatusService', () => {
       'tx-1',
       TransactionStatus.PENDING,
       Money.fromCents(50000, 'COP'),
-      'product-1',
+      [new TransactionItem('product-1', 1, 50000)],
       'customer-1',
       'gateway-tx-1',
       createdAt,
@@ -78,7 +79,7 @@ describe('GetTransactionStatusService', () => {
       'tx-1',
       TransactionStatus.APPROVED,
       Money.fromCents(50000, 'COP'),
-      'product-1',
+      [new TransactionItem('product-1', 1, 50000)],
       'customer-1',
       'gateway-tx-1',
       createdAt,
@@ -93,7 +94,7 @@ describe('GetTransactionStatusService', () => {
       status: TransactionStatus.APPROVED,
       amountInCents: 50000,
       currency: 'COP',
-      productId: 'product-1',
+      items: [{ productId: 'product-1', quantity: 1, unitPriceInCents: 50000 }],
       createdAt,
     });
     expect(paymentGateway.getTransactionStatus).toHaveBeenCalledWith(
@@ -111,7 +112,7 @@ describe('GetTransactionStatusService', () => {
       'tx-1',
       TransactionStatus.PENDING,
       Money.fromCents(50000, 'COP'),
-      'product-1',
+      [new TransactionItem('product-1', 1, 50000)],
       'customer-1',
       'gateway-tx-1',
       createdAt,
@@ -132,7 +133,7 @@ describe('GetTransactionStatusService', () => {
       'tx-1',
       TransactionStatus.PENDING,
       Money.fromCents(50000, 'COP'),
-      'product-1',
+      [new TransactionItem('product-1', 1, 50000)],
       'customer-1',
       'gateway-tx-1',
       createdAt,

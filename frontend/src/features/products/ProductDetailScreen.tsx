@@ -5,6 +5,7 @@ import ScreenContainer from '@components/ScreenContainer';
 import Button from '@components/Button';
 import LoadingIndicator from '@components/LoadingIndicator';
 import ErrorBanner from '@components/ErrorBanner';
+import { useToast } from '@components/ToastProvider';
 import { useAppDispatch, useAppSelector } from '@hooks/redux';
 import {
   fetchProducts,
@@ -13,6 +14,7 @@ import {
   selectProductsStatus,
 } from '@redux/slices/products.slice';
 import { setOrder } from '@redux/slices/order.slice';
+import { addItem } from '@redux/slices/cart.slice';
 import { formatCurrency } from '@utils/currency';
 import { colors, spacing, typography } from '@theme';
 import type { RootStackParamList } from '@navigation/routes';
@@ -22,6 +24,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ProductDetail'>;
 function ProductDetailScreen({ route, navigation }: Props) {
   const { productId } = route.params;
   const dispatch = useAppDispatch();
+  const { showToast } = useToast();
   const product = useAppSelector(selectProductById(productId));
   const status = useAppSelector(selectProductsStatus);
   const error = useAppSelector(selectProductsError);
@@ -53,8 +56,13 @@ function ProductDetailScreen({ route, navigation }: Props) {
   const canDecrease = quantity > 1;
 
   const handleBuy = () => {
-    dispatch(setOrder({ productId: product.id, quantity }));
+    dispatch(setOrder([{ productId: product.id, quantity }]));
     navigation.navigate('Checkout');
+  };
+
+  const handleAddToCart = () => {
+    dispatch(addItem({ productId: product.id, quantity }));
+    showToast('Agregado al carrito', 'success');
   };
 
   return (
@@ -87,6 +95,12 @@ function ProductDetailScreen({ route, navigation }: Props) {
         />
       </View>
 
+      <Button
+        title="Agregar al carrito"
+        variant="secondary"
+        onPress={handleAddToCart}
+        disabled={product.stock === 0}
+      />
       <Button
         title="Comprar"
         onPress={handleBuy}

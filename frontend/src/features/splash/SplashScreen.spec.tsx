@@ -51,7 +51,8 @@ describe('SplashScreen', () => {
 
   it('hydrates the store when there is persisted state', async () => {
     mockedLoadPersistedState.mockResolvedValue({
-      order: { productId: '1', quantity: 2 },
+      order: { items: [{ productId: '1', quantity: 2 }] },
+      cart: { items: [{ productId: '2', quantity: 1 }] },
       checkout: {
         customer: {
           fullName: 'Jane Doe',
@@ -64,7 +65,7 @@ describe('SplashScreen', () => {
         status: 'APPROVED',
         amountInCents: 24000000,
         currency: 'COP',
-        productId: '1',
+        items: [{ productId: '1', quantity: 2, unitPriceInCents: 12000000 }],
         createdAt: '2026-07-10T00:00:00.000Z',
       },
     });
@@ -78,7 +79,12 @@ describe('SplashScreen', () => {
     });
     jest.advanceTimersByTime(1200);
 
-    expect(store.getState().order.productId).toBe('1');
+    expect(store.getState().order.items).toEqual([
+      { productId: '1', quantity: 2 },
+    ]);
+    expect(store.getState().cart.items).toEqual([
+      { productId: '2', quantity: 1 },
+    ]);
     expect(replace).toHaveBeenCalledWith('Home');
   });
 

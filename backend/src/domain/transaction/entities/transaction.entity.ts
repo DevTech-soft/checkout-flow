@@ -1,4 +1,5 @@
 import { Money } from '@domain/shared/value-objects/money.vo';
+import { TransactionItem } from '@domain/transaction/entities/transaction-item.entity';
 import { TransactionStatus } from '@domain/transaction/transaction-status.enum';
 
 export class Transaction {
@@ -6,7 +7,7 @@ export class Transaction {
     public readonly id: string,
     public readonly status: TransactionStatus,
     public readonly amount: Money,
-    public readonly productId: string,
+    public readonly items: TransactionItem[],
     public readonly customerId: string,
     public readonly gatewayTransactionId: string | null,
     public readonly createdAt: Date,

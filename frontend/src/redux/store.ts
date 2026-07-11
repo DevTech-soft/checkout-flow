@@ -1,6 +1,7 @@
 import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import productsReducer from './slices/products.slice';
 import orderReducer from './slices/order.slice';
+import cartReducer from './slices/cart.slice';
 import checkoutReducer from './slices/checkout.slice';
 import cardReducer from './slices/card.slice';
 import transactionReducer from './slices/transaction.slice';
@@ -9,6 +10,7 @@ import { persistenceMiddleware } from './persistence/persistMiddleware';
 const rootReducer = combineReducers({
   products: productsReducer,
   order: orderReducer,
+  cart: cartReducer,
   checkout: checkoutReducer,
   card: cardReducer,
   transaction: transactionReducer,

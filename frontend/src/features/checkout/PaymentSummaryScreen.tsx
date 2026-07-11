@@ -7,8 +7,7 @@ import ErrorBanner from '@components/ErrorBanner';
 import ProcessingOverlay from '@components/ProcessingOverlay';
 import { useToast } from '@components/ToastProvider';
 import { useAppDispatch, useAppSelector } from '@hooks/redux';
-import { selectOrder } from '@redux/slices/order.slice';
-import { selectProductById } from '@redux/slices/products.slice';
+import { selectOrderLines, selectOrderTotal } from '@redux/slices/order.slice';
 import { selectCustomer } from '@redux/slices/checkout.slice';
 import { selectCard } from '@redux/slices/card.slice';
 import {
@@ -30,8 +29,8 @@ const BRAND_LABEL: Record<string, string> = {
 function PaymentSummaryScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
   const { showToast } = useToast();
-  const order = useAppSelector(selectOrder);
-  const product = useAppSelector(selectProductById(order.productId));
+  const lines = useAppSelector(selectOrderLines);
+  const total = useAppSelector(selectOrderTotal);
   const customer = useAppSelector(selectCustomer);
   const card = useAppSelector(selectCard);
   const transaction = useAppSelector(selectTransaction);
@@ -64,7 +63,7 @@ function PaymentSummaryScreen({ navigation }: Props) {
     navigation.navigate('TransactionResult');
   };
 
-  if (!product || !order.quantity || !customer || !card) {
+  if (lines.length === 0 || !customer || !card) {
     return (
       <ScreenContainer>
         <ErrorBanner message="No hay datos suficientes para confirmar el pago." />
@@ -72,30 +71,31 @@ function PaymentSummaryScreen({ navigation }: Props) {
     );
   }
 
-  const total = product.priceInCents * order.quantity;
-
   return (
     <ScreenContainer>
       <Text style={styles.title}>Confirma tu pago</Text>
 
       <Text style={styles.sectionTitle}>Resumen del pedido</Text>
       <View style={styles.card}>
-        <View style={styles.productRow}>
-          <Image
-            source={{ uri: product.imageUrl }}
-            style={styles.productImage}
-            resizeMode="cover"
-          />
-          <View style={styles.productInfo}>
-            <Text style={styles.productName} numberOfLines={2}>
-              {product.name}
-            </Text>
-            <Text style={styles.productMeta}>
-              {formatCurrency(product.priceInCents, product.currency)} c/u
-            </Text>
+        {lines.map(line => (
+          <View key={line.product.id} style={styles.productRow}>
+            <Image
+              source={{ uri: line.product.imageUrl }}
+              style={styles.productImage}
+              resizeMode="cover"
+            />
+            <View style={styles.productInfo}>
+              <Text style={styles.productName} numberOfLines={2}>
+                {line.product.name}
+              </Text>
+              <Text style={styles.productMeta}>
+                {formatCurrency(line.product.priceInCents, line.product.currency)}{' '}
+                c/u
+              </Text>
+            </View>
+            <Text style={styles.productQty}>x{line.quantity}</Text>
           </View>
-          <Text style={styles.productQty}>x{order.quantity}</Text>
-        </View>
+        ))}
       </View>
 
       <Text style={styles.sectionTitle}>Datos de contacto</Text>
@@ -125,21 +125,24 @@ function PaymentSummaryScreen({ navigation }: Props) {
 
       <Text style={styles.sectionTitle}>Desglose</Text>
       <View style={styles.card}>
-        <View style={styles.breakdownRow}>
-          <Text style={styles.breakdownLabel}>Precio unitario</Text>
-          <Text style={styles.breakdownValue}>
-            {formatCurrency(product.priceInCents, product.currency)}
-          </Text>
-        </View>
-        <View style={styles.breakdownRow}>
-          <Text style={styles.breakdownLabel}>Cantidad</Text>
-          <Text style={styles.breakdownValue}>{order.quantity}</Text>
-        </View>
+        {lines.map(line => (
+          <View key={line.product.id} style={styles.breakdownRow}>
+            <Text style={styles.breakdownLabel}>
+              {line.product.name} x{line.quantity}
+            </Text>
+            <Text style={styles.breakdownValue}>
+              {formatCurrency(
+                line.product.priceInCents * line.quantity,
+                line.product.currency,
+              )}
+            </Text>
+          </View>
+        ))}
         <View style={styles.divider} />
         <View style={styles.breakdownRow}>
           <Text style={styles.totalLabel}>Total</Text>
           <Text style={styles.totalValue}>
-            {formatCurrency(total, product.currency)}
+            {formatCurrency(total, lines[0].product.currency)}
           </Text>
         </View>
       </View>

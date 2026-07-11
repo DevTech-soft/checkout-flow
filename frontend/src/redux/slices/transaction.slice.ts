@@ -1,7 +1,10 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { createTransaction } from '@services/transactions/transactionService';
-import type { TransactionResult } from '@services/transactions/transaction.types';
+import type {
+  TransactionResult,
+  TransactionResultItem,
+} from '@services/transactions/transaction.types';
 import type { RootState } from '@redux/store';
 import type { AsyncStatus } from '@redux/types';
 
@@ -10,7 +13,7 @@ export interface TransactionState {
   status: TransactionResult['status'] | null;
   amountInCents: number | null;
   currency: string | null;
-  productId: string | null;
+  items: TransactionResultItem[];
   createdAt: string | null;
   requestStatus: AsyncStatus;
   error: string | null;
@@ -18,7 +21,7 @@ export interface TransactionState {
 
 export type PersistedTransactionState = Pick<
   TransactionState,
-  'id' | 'status' | 'amountInCents' | 'currency' | 'productId' | 'createdAt'
+  'id' | 'status' | 'amountInCents' | 'currency' | 'items' | 'createdAt'
 >;
 
 const initialState: TransactionState = {
@@ -26,7 +29,7 @@ const initialState: TransactionState = {
   status: null,
   amountInCents: null,
   currency: null,
-  productId: null,
+  items: [],
   createdAt: null,
   requestStatus: 'idle',
   error: null,
@@ -40,9 +43,14 @@ export const submitTransaction = createAsyncThunk<
   'transaction/submitTransaction',
   async (_, { getState, rejectWithValue }) => {
     const { order, products, checkout, card } = getState();
-    const product = products.items.find(item => item.id === order.productId);
 
-    if (!order.productId || !order.quantity || !product) {
+    if (order.items.length === 0) {
+      return rejectWithValue('No hay una orden activa para procesar el pago.');
+    }
+    const hasAllProducts = order.items.every(item =>
+      products.items.some(product => product.id === item.productId),
+    );
+    if (!hasAllProducts) {
       return rejectWithValue('No hay una orden activa para procesar el pago.');
     }
     if (!checkout.customer) {
@@ -56,8 +64,7 @@ export const submitTransaction = createAsyncThunk<
 
     try {
       return await createTransaction({
-        productId: order.productId,
-        quantity: order.quantity,
+        items: order.items,
         cardToken: card.card.token,
         fullName: checkout.customer.fullName,
         email: checkout.customer.email,
@@ -99,7 +106,7 @@ const transactionSlice = createSlice({
           state.status = action.payload.status;
           state.amountInCents = action.payload.amountInCents;
           state.currency = action.payload.currency;
-          state.productId = action.payload.productId;
+          state.items = action.payload.items;
           state.createdAt = action.payload.createdAt;
         },
       )

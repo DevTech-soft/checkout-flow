@@ -29,7 +29,7 @@ function buildProps(navigate: jest.Mock): Props {
 }
 
 const preloadedState: Partial<RootState> = {
-  order: { productId: '1', quantity: 2 },
+  order: { items: [{ productId: '1', quantity: 2 }] },
   products: {
     items: [
       {
@@ -92,7 +92,7 @@ describe('PaymentSummaryScreen', () => {
       status: 'APPROVED',
       amountInCents: 24000000,
       currency: 'COP',
-      productId: '1',
+      items: [{ productId: '1', quantity: 2, unitPriceInCents: 12000000 }],
       createdAt: '2026-07-10T00:00:00.000Z',
     });
     const navigate = jest.fn();
@@ -108,8 +108,7 @@ describe('PaymentSummaryScreen', () => {
     });
     expect(store.getState().transaction.status).toBe('APPROVED');
     expect(mockedCreateTransaction).toHaveBeenCalledWith({
-      productId: '1',
-      quantity: 2,
+      items: [{ productId: '1', quantity: 2 }],
       cardToken: 'tok_test_123',
       fullName: 'Jane Doe',
       email: 'jane@example.com',
@@ -167,7 +166,7 @@ describe('PaymentSummaryScreen', () => {
       status: 'APPROVED',
       amountInCents: 24000000,
       currency: 'COP',
-      productId: '1',
+      items: [{ productId: '1', quantity: 2, unitPriceInCents: 12000000 }],
       createdAt: '2026-07-10T00:00:00.000Z',
     });
 

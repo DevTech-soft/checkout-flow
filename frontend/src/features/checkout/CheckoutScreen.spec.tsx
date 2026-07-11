@@ -15,7 +15,7 @@ function buildProps(navigate: jest.Mock): Props {
 }
 
 const preloadedState: Partial<RootState> = {
-  order: { productId: '1', quantity: 2 },
+  order: { items: [{ productId: '1', quantity: 2 }] },
   products: {
     items: [
       {

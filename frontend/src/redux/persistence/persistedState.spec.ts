@@ -19,7 +19,8 @@ describe('persistedState', () => {
 
   it('loads the persisted state from secure storage', async () => {
     const persisted: PersistedState = {
-      order: { productId: '1', quantity: 2 },
+      order: { items: [{ productId: '1', quantity: 2 }] },
+      cart: { items: [{ productId: '2', quantity: 3 }] },
       checkout: {
         customer: {
           fullName: 'Jane Doe',
@@ -32,7 +33,7 @@ describe('persistedState', () => {
         status: 'APPROVED',
         amountInCents: 24000000,
         currency: 'COP',
-        productId: '1',
+        items: [{ productId: '1', quantity: 2, unitPriceInCents: 12000000 }],
         createdAt: '2026-07-10T00:00:00.000Z',
       },
     };
@@ -56,7 +57,8 @@ describe('persistedState', () => {
     mockedSecureStorage.setItem.mockResolvedValue(undefined);
 
     const state = {
-      order: { productId: '1', quantity: 2 },
+      order: { items: [{ productId: '1', quantity: 2 }] },
+      cart: { items: [{ productId: '2', quantity: 3 }] },
       checkout: { customer: null },
       card: { card: null },
       products: { items: [], status: 'idle', error: null },
@@ -65,7 +67,7 @@ describe('persistedState', () => {
         status: 'APPROVED',
         amountInCents: 24000000,
         currency: 'COP',
-        productId: '1',
+        items: [{ productId: '1', quantity: 2, unitPriceInCents: 12000000 }],
         createdAt: '2026-07-10T00:00:00.000Z',
         requestStatus: 'succeeded',
         error: null,
@@ -75,14 +77,15 @@ describe('persistedState', () => {
     await savePersistedState(state);
 
     expect(mockedSecureStorage.setItem).toHaveBeenCalledWith(PERSIST_KEY, {
-      order: { productId: '1', quantity: 2 },
+      order: { items: [{ productId: '1', quantity: 2 }] },
+      cart: { items: [{ productId: '2', quantity: 3 }] },
       checkout: { customer: null },
       transaction: {
         id: 'txn-123',
         status: 'APPROVED',
         amountInCents: 24000000,
         currency: 'COP',
-        productId: '1',
+        items: [{ productId: '1', quantity: 2, unitPriceInCents: 12000000 }],
         createdAt: '2026-07-10T00:00:00.000Z',
       },
     });
