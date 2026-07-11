@@ -4,6 +4,7 @@ import ScreenContainer from '@components/ScreenContainer';
 import Button from '@components/Button';
 import ErrorBanner from '@components/ErrorBanner';
 import CardBrandBadge from '@components/CardBrandBadge';
+import { useToast } from '@components/ToastProvider';
 import { useAppDispatch, useAppSelector } from '@hooks/redux';
 import { selectOrder } from '@redux/slices/order.slice';
 import { selectProductById } from '@redux/slices/products.slice';
@@ -21,6 +22,7 @@ type Props = NativeStackScreenProps<RootStackParamList, 'PaymentSummary'>;
 
 function PaymentSummaryScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
+  const { showToast } = useToast();
   const order = useAppSelector(selectOrder);
   const product = useAppSelector(selectProductById(order.productId));
   const customer = useAppSelector(selectCustomer);
@@ -30,7 +32,10 @@ function PaymentSummaryScreen({ navigation }: Props) {
   const submitting = transaction.requestStatus === 'loading';
 
   const handlePay = async () => {
-    await dispatch(submitTransaction());
+    const result = await dispatch(submitTransaction());
+    if (submitTransaction.rejected.match(result)) {
+      showToast(result.payload ?? 'No pudimos procesar tu pago.');
+    }
     navigation.navigate('TransactionResult');
   };
 

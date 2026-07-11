@@ -16,6 +16,7 @@ import { PaymentGatewayPort } from '@application/ports/payment-gateway.port';
 import { CreateTransactionDto } from '@application/transaction/dto/create-transaction.dto';
 import { TransactionResultDto } from '@application/transaction/dto/transaction-result.dto';
 import { CreateTransactionUseCase } from '@application/transaction/use-cases/create-transaction.use-case';
+import { mapGatewayStatus } from '@application/transaction/mappers/gateway-status.mapper';
 
 @Injectable()
 export class CreateTransactionService implements CreateTransactionUseCase {
@@ -107,16 +108,5 @@ export class CreateTransactionService implements CreateTransactionUseCase {
         input.phoneNumber,
       ),
     );
-  }
-}
-
-function mapGatewayStatus(status: string): TransactionStatus {
-  switch (status) {
-    case 'APPROVED':
-      return TransactionStatus.APPROVED;
-    case 'DECLINED':
-      return TransactionStatus.DECLINED;
-    default:
-      return TransactionStatus.ERROR;
   }
 }

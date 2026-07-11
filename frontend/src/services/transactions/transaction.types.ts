@@ -3,8 +3,10 @@ export type TransactionStatus = 'PENDING' | 'APPROVED' | 'DECLINED' | 'ERROR';
 export interface CreateTransactionInput {
   productId: string;
   quantity: number;
-  amountInCents: number;
-  currency: string;
+  cardToken: string;
+  fullName: string;
+  email: string;
+  phoneNumber: string;
 }
 
 export interface TransactionResult {

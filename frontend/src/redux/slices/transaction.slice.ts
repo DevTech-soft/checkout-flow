@@ -35,22 +35,43 @@ const initialState: TransactionState = {
 export const submitTransaction = createAsyncThunk<
   TransactionResult,
   void,
-  { state: RootState }
->('transaction/submitTransaction', async (_, { getState, rejectWithValue }) => {
-  const { order, products } = getState();
-  const product = products.items.find(item => item.id === order.productId);
+  { state: RootState; rejectValue: string }
+>(
+  'transaction/submitTransaction',
+  async (_, { getState, rejectWithValue }) => {
+    const { order, products, checkout, card } = getState();
+    const product = products.items.find(item => item.id === order.productId);
 
-  if (!order.productId || !order.quantity || !product) {
-    return rejectWithValue('No hay una orden activa para procesar el pago.');
-  }
+    if (!order.productId || !order.quantity || !product) {
+      return rejectWithValue('No hay una orden activa para procesar el pago.');
+    }
+    if (!checkout.customer) {
+      return rejectWithValue(
+        'Completa tus datos de contacto antes de pagar.',
+      );
+    }
+    if (!card.card) {
+      return rejectWithValue('Ingresa los datos de tu tarjeta antes de pagar.');
+    }
 
-  return createTransaction({
-    productId: order.productId,
-    quantity: order.quantity,
-    amountInCents: product.priceInCents * order.quantity,
-    currency: product.currency,
-  });
-});
+    try {
+      return await createTransaction({
+        productId: order.productId,
+        quantity: order.quantity,
+        cardToken: card.card.token,
+        fullName: checkout.customer.fullName,
+        email: checkout.customer.email,
+        phoneNumber: checkout.customer.phoneNumber,
+      });
+    } catch (error) {
+      return rejectWithValue(
+        error instanceof Error
+          ? error.message
+          : 'No pudimos procesar tu pago.',
+      );
+    }
+  },
+);
 
 const transactionSlice = createSlice({
   name: 'transaction',

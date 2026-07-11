@@ -46,6 +46,15 @@ export class PrismaTransactionRepository implements TransactionRepository {
     });
     return transaction ? toDomain(transaction) : null;
   }
+
+  async findByGatewayTransactionId(
+    gatewayTransactionId: string,
+  ): Promise<Transaction | null> {
+    const transaction = await this.prisma.transaction.findFirst({
+      where: { gatewayTransactionId },
+    });
+    return transaction ? toDomain(transaction) : null;
+  }
 }
 
 function toDomain(transaction: PrismaTransaction): Transaction {

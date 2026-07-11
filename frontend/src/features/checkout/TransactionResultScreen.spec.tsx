@@ -46,6 +46,7 @@ function withTransaction(
         lastFourDigits: '4242',
         cardHolder: 'Jane Doe',
         expiryDate: '12/99',
+        token: 'tok_test_123',
       },
     },
   };

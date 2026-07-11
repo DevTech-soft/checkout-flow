@@ -1,8 +1,8 @@
 import { combineReducers, configureStore } from '@reduxjs/toolkit';
 import productsReducer from './products.slice';
 import orderReducer, { setOrder } from './order.slice';
-import checkoutReducer from './checkout.slice';
-import cardReducer from './card.slice';
+import checkoutReducer, { setCustomer } from './checkout.slice';
+import cardReducer, { setCard } from './card.slice';
 import transactionReducer, {
   hydrateTransaction,
   resetTransaction,
@@ -77,7 +77,63 @@ describe('transaction.slice', () => {
     expect(mockedCreateTransaction).not.toHaveBeenCalled();
   });
 
-  it('submits the transaction for the active order and product', async () => {
+  function withCustomerAndCard(store: ReturnType<typeof buildStore>): void {
+    store.dispatch(
+      setCustomer({
+        fullName: 'Jane Doe',
+        email: 'jane@example.com',
+        phoneNumber: '3001234567',
+      }),
+    );
+    store.dispatch(
+      setCard({
+        brand: 'VISA',
+        lastFourDigits: '4242',
+        cardHolder: 'Jane Doe',
+        expiryDate: '12/99',
+        token: 'tok_test_123',
+      }),
+    );
+  }
+
+  it('rejects when there is no customer info', async () => {
+    const store = buildStore({
+      products: { items: [product], status: 'succeeded', error: null },
+    });
+    store.dispatch(setOrder({ productId: '1', quantity: 2 }));
+
+    await store.dispatch(submitTransaction());
+    const state = store.getState() as unknown as RootState;
+
+    expect(selectTransaction(state).error).toBe(
+      'Completa tus datos de contacto antes de pagar.',
+    );
+    expect(mockedCreateTransaction).not.toHaveBeenCalled();
+  });
+
+  it('rejects when there is no card info', async () => {
+    const store = buildStore({
+      products: { items: [product], status: 'succeeded', error: null },
+    });
+    store.dispatch(setOrder({ productId: '1', quantity: 2 }));
+    store.dispatch(
+      setCustomer({
+        fullName: 'Jane Doe',
+        email: 'jane@example.com',
+        phoneNumber: '3001234567',
+      }),
+    );
+
+    await store.dispatch(submitTransaction());
+    const state = store.getState() as unknown as RootState;
+
+    expect(selectTransaction(state).error).toBe(
+      'Ingresa los datos de tu tarjeta antes de pagar.',
+    );
+    expect(mockedCreateTransaction).not.toHaveBeenCalled();
+  });
+
+  it('submits the transaction with the card token and customer data', async () => {
     mockedCreateTransaction.mockResolvedValue({
       id: 'txn-123',
       status: 'APPROVED',
@@ -91,6 +147,7 @@ describe('transaction.slice', () => {
       products: { items: [product], status: 'succeeded', error: null },
     });
     store.dispatch(setOrder({ productId: '1', quantity: 2 }));
+    withCustomerAndCard(store);
 
     await store.dispatch(submitTransaction());
     const state = store.getState() as unknown as RootState;
@@ -98,8 +155,10 @@ describe('transaction.slice', () => {
     expect(mockedCreateTransaction).toHaveBeenCalledWith({
       productId: '1',
       quantity: 2,
-      amountInCents: 24000000,
-      currency: 'COP',
+      cardToken: 'tok_test_123',
+      fullName: 'Jane Doe',
+      email: 'jane@example.com',
+      phoneNumber: '3001234567',
     });
     expect(selectTransaction(state)).toEqual({
       id: 'txn-123',
@@ -111,6 +170,26 @@ describe('transaction.slice', () => {
       requestStatus: 'succeeded',
       error: null,
     });
+  });
+
+  it('surfaces the createTransaction error message on failure', async () => {
+    mockedCreateTransaction.mockRejectedValue(
+      new Error('El pago fue rechazado por el banco emisor.'),
+    );
+
+    const store = buildStore({
+      products: { items: [product], status: 'succeeded', error: null },
+    });
+    store.dispatch(setOrder({ productId: '1', quantity: 2 }));
+    withCustomerAndCard(store);
+
+    await store.dispatch(submitTransaction());
+    const state = store.getState() as unknown as RootState;
+
+    expect(selectTransaction(state).requestStatus).toBe('failed');
+    expect(selectTransaction(state).error).toBe(
+      'El pago fue rechazado por el banco emisor.',
+    );
   });
 
   it('resets to the initial state on resetTransaction', () => {
