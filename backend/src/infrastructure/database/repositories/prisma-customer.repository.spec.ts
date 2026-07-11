@@ -29,6 +29,14 @@ describe('PrismaCustomerRepository', () => {
     );
   });
 
+  it('maps the record to a domain customer when found by email', async () => {
+    const customer = await repository.findByEmail('jane@example.com');
+
+    expect(customer).toEqual(
+      new Customer('customer-1', 'Jane Doe', 'jane@example.com', '3001234567'),
+    );
+  });
+
   it('returns null when a customer is not found by email', async () => {
     prisma.customer.findUnique.mockResolvedValue(null);
 

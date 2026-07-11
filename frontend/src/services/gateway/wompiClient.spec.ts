@@ -64,4 +64,28 @@ describe('wompiClient', () => {
       'No pudimos validar tu tarjeta. Intenta nuevamente.',
     );
   });
+
+  it('throws the gateway reason when there are no field-level messages', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      json: () =>
+        Promise.resolve({
+          status: 'ERROR',
+          error: { reason: 'INVALID_CARD' },
+        }),
+    }) as unknown as typeof fetch;
+
+    await expect(tokenizeCard(input)).rejects.toThrow('INVALID_CARD');
+  });
+
+  it('throws a generic message when the response body cannot be parsed', async () => {
+    globalThis.fetch = jest.fn().mockResolvedValue({
+      ok: false,
+      json: () => Promise.reject(new Error('invalid json')),
+    }) as unknown as typeof fetch;
+
+    await expect(tokenizeCard(input)).rejects.toThrow(
+      'No pudimos validar tu tarjeta. Verifica los datos e intenta de nuevo.',
+    );
+  });
 });

@@ -30,7 +30,7 @@ describe('PaymentGatewayWebhookVerifier', () => {
       signature: { properties, checksum },
       timestamp,
       ...overrides,
-    } as PaymentWebhookEventDto;
+    };
   }
 
   it('accepts an event whose checksum matches the computed signature', () => {
@@ -49,5 +49,19 @@ describe('PaymentGatewayWebhookVerifier', () => {
     event.data = { transaction: { id: 'gw-1', status: 'DECLINED' } };
 
     expect(verifier.verify(event)).toBe(false);
+  });
+
+  it('resolves a missing signed property to an empty string instead of throwing', () => {
+    const timestamp = 1700000000;
+    const checksum = createHash('sha256')
+      .update(`${timestamp}${eventsKey}`)
+      .digest('hex');
+    const event = buildEvent({
+      data: { transaction: { id: 'gw-1' } },
+      signature: { properties: ['transaction.missing.deep'], checksum },
+      timestamp,
+    });
+
+    expect(verifier.verify(event)).toBe(true);
   });
 });

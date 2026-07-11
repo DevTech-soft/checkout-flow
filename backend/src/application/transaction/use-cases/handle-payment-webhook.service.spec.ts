@@ -63,6 +63,18 @@ describe('HandlePaymentWebhookService', () => {
     expect(transactionRepository.updateStatus).not.toHaveBeenCalled();
   });
 
+  it('ignores the event when the gateway payload has no transaction id', async () => {
+    await service.execute({
+      ...event,
+      data: { transaction: { status: 'APPROVED' } },
+    });
+
+    expect(
+      transactionRepository.findByGatewayTransactionId,
+    ).not.toHaveBeenCalled();
+    expect(transactionRepository.updateStatus).not.toHaveBeenCalled();
+  });
+
   it('ignores the event when no local transaction matches the gateway id', async () => {
     transactionRepository.findByGatewayTransactionId.mockResolvedValue(null);
 

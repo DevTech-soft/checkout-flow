@@ -90,6 +90,13 @@ describe('PrismaTransactionRepository', () => {
     expect(result.status).toBe(TransactionStatus.APPROVED);
   });
 
+  it('maps the record to a domain transaction when found by id', async () => {
+    const transaction = await repository.findById('tx-1');
+
+    expect(transaction?.id).toBe('tx-1');
+    expect(transaction?.status).toBe(TransactionStatus.PENDING);
+  });
+
   it('returns null when a transaction is not found', async () => {
     prisma.transaction.findUnique.mockResolvedValue(null);
 
