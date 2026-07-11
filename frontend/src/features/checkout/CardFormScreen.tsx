@@ -4,7 +4,7 @@ import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import ScreenContainer from '@components/ScreenContainer';
 import Button from '@components/Button';
 import TextField from '@components/TextField';
-import CardBrandBadge from '@components/CardBrandBadge';
+import CardPreview from '@components/CardPreview';
 import ErrorBanner from '@components/ErrorBanner';
 import { useAppDispatch } from '@hooks/redux';
 import { useToast } from '@components/ToastProvider';
@@ -93,6 +93,13 @@ function CardFormScreen({ navigation }: Props) {
     <ScreenContainer>
       <Text style={styles.title}>Datos de la tarjeta</Text>
 
+      <CardPreview
+        cardNumber={cardNumber}
+        cardHolder={cardHolder}
+        expiryDate={expiryDate}
+        brand={brand}
+      />
+
       <TextField
         label="Nombre en la tarjeta"
         value={cardHolder}
@@ -109,7 +116,6 @@ function CardFormScreen({ navigation }: Props) {
         keyboardType="number-pad"
         maxLength={23}
       />
-      <CardBrandBadge brand={brand} />
 
       <View style={styles.row}>
         <View style={styles.half}>
