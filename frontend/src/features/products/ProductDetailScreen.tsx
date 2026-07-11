@@ -5,8 +5,14 @@ import ScreenContainer from '@components/ScreenContainer';
 import Button from '@components/Button';
 import LoadingIndicator from '@components/LoadingIndicator';
 import ErrorBanner from '@components/ErrorBanner';
-import { getProductById } from '@services/products/productService';
-import type { Product } from '@services/products/product.types';
+import { useAppDispatch, useAppSelector } from '@hooks/redux';
+import {
+  fetchProducts,
+  selectProductById,
+  selectProductsError,
+  selectProductsStatus,
+} from '@redux/slices/products.slice';
+import { setOrder } from '@redux/slices/order.slice';
 import { formatCurrency } from '@utils/currency';
 import { colors, spacing, typography } from '@theme';
 import type { RootStackParamList } from '@navigation/routes';
@@ -15,37 +21,19 @@ type Props = NativeStackScreenProps<RootStackParamList, 'ProductDetail'>;
 
 function ProductDetailScreen({ route, navigation }: Props) {
   const { productId } = route.params;
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const product = useAppSelector(selectProductById(productId));
+  const status = useAppSelector(selectProductsStatus);
+  const error = useAppSelector(selectProductsError);
   const [quantity, setQuantity] = useState(1);
 
   useEffect(() => {
-    let isMounted = true;
+    if (status === 'idle') {
+      dispatch(fetchProducts());
+    }
+  }, [status, dispatch]);
 
-    getProductById(productId)
-      .then(result => {
-        if (isMounted) {
-          setProduct(result);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setError('No pudimos cargar el producto.');
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [productId]);
-
-  if (loading) {
+  if (status === 'loading' || status === 'idle') {
     return (
       <ScreenContainer>
         <LoadingIndicator label="Cargando producto..." />
@@ -63,6 +51,11 @@ function ProductDetailScreen({ route, navigation }: Props) {
 
   const canIncrease = quantity < product.stock;
   const canDecrease = quantity > 1;
+
+  const handleBuy = () => {
+    dispatch(setOrder({ productId: product.id, quantity }));
+    navigation.navigate('Checkout');
+  };
 
   return (
     <ScreenContainer>
@@ -96,9 +89,7 @@ function ProductDetailScreen({ route, navigation }: Props) {
 
       <Button
         title="Comprar"
-        onPress={() =>
-          navigation.navigate('Checkout', { productId: product.id, quantity })
-        }
+        onPress={handleBuy}
         disabled={product.stock === 0}
       />
     </ScreenContainer>

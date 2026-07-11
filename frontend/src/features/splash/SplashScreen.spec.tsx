@@ -1,6 +1,11 @@
-import { render, screen } from '@testing-library/react-native';
+jest.mock('@redux/persistence/persistedState', () => ({
+  loadPersistedState: jest.fn().mockResolvedValue(null),
+}));
+
+import { act, screen } from '@testing-library/react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import SplashScreen from './SplashScreen';
+import { renderWithProviders } from '../../tests/renderWithProviders';
 import type { RootStackParamList } from '@navigation/routes';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Splash'>;
@@ -16,15 +21,18 @@ function buildProps(replace: jest.Mock): Props {
 
 describe('SplashScreen', () => {
   it('renders the app title', async () => {
-    await render(<SplashScreen {...buildProps(jest.fn())} />);
+    await renderWithProviders(<SplashScreen {...buildProps(jest.fn())} />);
 
     expect(screen.getByText('Checkout Flow')).toBeTruthy();
   });
 
   it('navigates to Home after the splash delay', async () => {
     const replace = jest.fn();
-    await render(<SplashScreen {...buildProps(replace)} />);
+    await renderWithProviders(<SplashScreen {...buildProps(replace)} />);
 
+    await act(async () => {
+      await Promise.resolve();
+    });
     jest.advanceTimersByTime(1200);
 
     expect(replace).toHaveBeenCalledWith('Home');

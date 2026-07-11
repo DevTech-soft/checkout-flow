@@ -5,6 +5,8 @@ import ScreenContainer from '@components/ScreenContainer';
 import Button from '@components/Button';
 import TextField from '@components/TextField';
 import CardBrandBadge from '@components/CardBrandBadge';
+import { useAppDispatch } from '@hooks/redux';
+import { setCard } from '@redux/slices/card.slice';
 import { detectCardBrand } from '@utils/cardBrand';
 import { formatCardNumber, formatExpiryDate } from '@utils/cardFormat';
 import {
@@ -22,8 +24,8 @@ type FormErrors = Partial<
   Record<'cardHolder' | 'cardNumber' | 'expiryDate' | 'cvv', string>
 >;
 
-function CardFormScreen({ route, navigation }: Props) {
-  const { productId, quantity, customer } = route.params;
+function CardFormScreen({ navigation }: Props) {
+  const dispatch = useAppDispatch();
 
   const [cardHolder, setCardHolder] = useState('');
   const [cardNumber, setCardNumber] = useState('');
@@ -48,17 +50,15 @@ function CardFormScreen({ route, navigation }: Props) {
 
     const digits = cardNumber.replace(/\s/g, '');
 
-    navigation.navigate('PaymentSummary', {
-      productId,
-      quantity,
-      customer,
-      card: {
+    dispatch(
+      setCard({
         brand,
         lastFourDigits: digits.slice(-4),
         cardHolder,
         expiryDate,
-      },
-    });
+      }),
+    );
+    navigation.navigate('PaymentSummary');
   };
 
   return (

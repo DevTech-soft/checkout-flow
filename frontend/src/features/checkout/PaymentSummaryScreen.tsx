@@ -1,57 +1,48 @@
-import { useEffect, useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import ScreenContainer from '@components/ScreenContainer';
 import Button from '@components/Button';
-import LoadingIndicator from '@components/LoadingIndicator';
+import ErrorBanner from '@components/ErrorBanner';
 import CardBrandBadge from '@components/CardBrandBadge';
-import { getProductById } from '@services/products/productService';
-import type { Product } from '@services/products/product.types';
+import { useAppDispatch, useAppSelector } from '@hooks/redux';
+import { selectOrder } from '@redux/slices/order.slice';
+import { selectProductById } from '@redux/slices/products.slice';
+import { selectCustomer } from '@redux/slices/checkout.slice';
+import { selectCard } from '@redux/slices/card.slice';
+import {
+  selectTransaction,
+  submitTransaction,
+} from '@redux/slices/transaction.slice';
 import { formatCurrency } from '@utils/currency';
 import { colors, spacing, typography } from '@theme';
 import type { RootStackParamList } from '@navigation/routes';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PaymentSummary'>;
 
-const SUBMIT_DELAY_MS = 800;
+function PaymentSummaryScreen({ navigation }: Props) {
+  const dispatch = useAppDispatch();
+  const order = useAppSelector(selectOrder);
+  const product = useAppSelector(selectProductById(order.productId));
+  const customer = useAppSelector(selectCustomer);
+  const card = useAppSelector(selectCard);
+  const transaction = useAppSelector(selectTransaction);
 
-function PaymentSummaryScreen({ route, navigation }: Props) {
-  const { productId, quantity, customer, card } = route.params;
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [submitting, setSubmitting] = useState(false);
+  const submitting = transaction.requestStatus === 'loading';
 
-  useEffect(() => {
-    let isMounted = true;
-
-    getProductById(productId).then(result => {
-      if (isMounted) {
-        setProduct(result);
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [productId]);
-
-  const handlePay = () => {
-    setSubmitting(true);
-    setTimeout(() => {
-      navigation.navigate('TransactionResult', { status: 'success' });
-    }, SUBMIT_DELAY_MS);
+  const handlePay = async () => {
+    await dispatch(submitTransaction());
+    navigation.navigate('TransactionResult');
   };
 
-  if (loading || !product) {
+  if (!product || !order.quantity || !customer || !card) {
     return (
       <ScreenContainer>
-        <LoadingIndicator label="Cargando resumen..." />
+        <ErrorBanner message="No hay datos suficientes para confirmar el pago." />
       </ScreenContainer>
     );
   }
 
-  const total = product.priceInCents * quantity;
+  const total = product.priceInCents * order.quantity;
 
   return (
     <ScreenContainer>
@@ -59,7 +50,7 @@ function PaymentSummaryScreen({ route, navigation }: Props) {
 
       <Text style={styles.sectionTitle}>Producto</Text>
       <Text style={styles.line}>
-        {product.name} x{quantity}
+        {product.name} x{order.quantity}
       </Text>
       <Text style={styles.total}>
         {formatCurrency(total, product.currency)}
@@ -75,6 +66,8 @@ function PaymentSummaryScreen({ route, navigation }: Props) {
       <Text style={styles.line}>{card.cardHolder}</Text>
       <Text style={styles.line}>•••• •••• •••• {card.lastFourDigits}</Text>
       <Text style={styles.line}>Vence {card.expiryDate}</Text>
+
+      {transaction.error ? <ErrorBanner message={transaction.error} /> : null}
 
       <Button
         title="Pagar"
