@@ -9,6 +9,10 @@ Monorepo con dos proyectos independientes:
 
 Cada carpeta tiene su propio `package.json`, dependencias y `.gitignore`. Consulta el README de cada una para instrucciones específicas de instalación, ejecución, pruebas, variables de entorno y decisiones técnicas.
 
+## Descargar el APK
+
+[`docs/apk/mobileTestApp-release.apk`](docs/apk/mobileTestApp-release.apk) — build de release lista para instalar (firmada con el keystore de debug). Apunta al backend desplegado en Railway, no requiere backend local.
+
 ## Arranque rápido de punta a punta
 
 ```sh
