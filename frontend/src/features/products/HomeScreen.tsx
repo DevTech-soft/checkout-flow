@@ -1,5 +1,5 @@
 import { useCallback, useEffect } from 'react';
-import { FlatList, StyleSheet, Text } from 'react-native';
+import { FlatList, StyleSheet } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import ScreenContainer from '@components/ScreenContainer';
 import ProductCard from '@components/ProductCard';
@@ -46,7 +46,6 @@ function HomeScreen({ navigation }: Props) {
 
   return (
     <ScreenContainer scrollable={false}>
-      <Text style={styles.title}>Productos</Text>
       {error ? <ErrorBanner message={error} /> : null}
       <FlatList
         data={products}

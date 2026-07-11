@@ -9,6 +9,7 @@ type ButtonProps = {
   variant?: ButtonVariant;
   disabled?: boolean;
   loading?: boolean;
+  pill?: boolean;
 };
 
 function Button({
@@ -17,6 +18,7 @@ function Button({
   variant = 'primary',
   disabled = false,
   loading = false,
+  pill = false,
 }: ButtonProps) {
   const isDisabled = disabled || loading;
 
@@ -29,6 +31,7 @@ function Button({
       style={({ pressed }) => [
         styles.base,
         variant === 'primary' ? styles.primary : styles.secondary,
+        pill && styles.pill,
         isDisabled && styles.disabled,
         pressed && !isDisabled && styles.pressed,
       ]}
@@ -64,6 +67,10 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
+  },
+  pill: {
+    borderRadius: 999,
+    minHeight: 56,
   },
   disabled: {
     opacity: 0.5,

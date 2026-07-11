@@ -1,9 +1,10 @@
-import { StyleSheet, Text } from 'react-native';
+import { useEffect } from 'react';
+import { BackHandler, Image, StyleSheet, Text, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import ScreenContainer from '@components/ScreenContainer';
 import Button from '@components/Button';
 import ErrorBanner from '@components/ErrorBanner';
-import CardBrandBadge from '@components/CardBrandBadge';
+import ProcessingOverlay from '@components/ProcessingOverlay';
 import { useToast } from '@components/ToastProvider';
 import { useAppDispatch, useAppSelector } from '@hooks/redux';
 import { selectOrder } from '@redux/slices/order.slice';
@@ -20,6 +21,12 @@ import type { RootStackParamList } from '@navigation/routes';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'PaymentSummary'>;
 
+const BRAND_LABEL: Record<string, string> = {
+  VISA: 'VISA',
+  MASTERCARD: 'Mastercard',
+  UNKNOWN: '',
+};
+
 function PaymentSummaryScreen({ navigation }: Props) {
   const dispatch = useAppDispatch();
   const { showToast } = useToast();
@@ -30,6 +37,24 @@ function PaymentSummaryScreen({ navigation }: Props) {
   const transaction = useAppSelector(selectTransaction);
 
   const submitting = transaction.requestStatus === 'loading';
+
+  useEffect(() => {
+    navigation.setOptions({
+      gestureEnabled: !submitting,
+      headerBackVisible: !submitting,
+    });
+  }, [navigation, submitting]);
+
+  useEffect(() => {
+    if (!submitting) {
+      return undefined;
+    }
+    const subscription = BackHandler.addEventListener(
+      'hardwareBackPress',
+      () => true,
+    );
+    return () => subscription.remove();
+  }, [submitting]);
 
   const handlePay = async () => {
     const result = await dispatch(submitTransaction());
@@ -53,33 +78,85 @@ function PaymentSummaryScreen({ navigation }: Props) {
     <ScreenContainer>
       <Text style={styles.title}>Confirma tu pago</Text>
 
-      <Text style={styles.sectionTitle}>Producto</Text>
-      <Text style={styles.line}>
-        {product.name} x{order.quantity}
-      </Text>
-      <Text style={styles.total}>
-        {formatCurrency(total, product.currency)}
-      </Text>
+      <Text style={styles.sectionTitle}>Resumen del pedido</Text>
+      <View style={styles.card}>
+        <View style={styles.productRow}>
+          <Image
+            source={{ uri: product.imageUrl }}
+            style={styles.productImage}
+            resizeMode="cover"
+          />
+          <View style={styles.productInfo}>
+            <Text style={styles.productName} numberOfLines={2}>
+              {product.name}
+            </Text>
+            <Text style={styles.productMeta}>
+              {formatCurrency(product.priceInCents, product.currency)} c/u
+            </Text>
+          </View>
+          <Text style={styles.productQty}>x{order.quantity}</Text>
+        </View>
+      </View>
 
-      <Text style={styles.sectionTitle}>Datos del cliente</Text>
-      <Text style={styles.line}>{customer.fullName}</Text>
-      <Text style={styles.line}>{customer.email}</Text>
-      <Text style={styles.line}>{customer.phoneNumber}</Text>
+      <Text style={styles.sectionTitle}>Datos de contacto</Text>
+      <View style={styles.card}>
+        <Text style={styles.primaryLine}>{customer.fullName}</Text>
+        <Text style={styles.mutedLine}>{customer.email}</Text>
+        <Text style={styles.mutedLine}>{customer.phoneNumber}</Text>
+      </View>
 
-      <Text style={styles.sectionTitle}>Tarjeta</Text>
-      <CardBrandBadge brand={card.brand} />
-      <Text style={styles.line}>{card.cardHolder}</Text>
-      <Text style={styles.line}>•••• •••• •••• {card.lastFourDigits}</Text>
-      <Text style={styles.line}>Vence {card.expiryDate}</Text>
+      <Text style={styles.sectionTitle}>Método de pago</Text>
+      <View style={styles.card}>
+        <View style={styles.paymentRow}>
+          <Text style={styles.maskedNumber}>
+            •••• •••• •••• {card.lastFourDigits}
+          </Text>
+          {BRAND_LABEL[card.brand] ? (
+            <View style={styles.brandPill}>
+              <Text style={styles.brandPillText}>
+                {BRAND_LABEL[card.brand]}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+        <Text style={styles.mutedLine}>{card.cardHolder}</Text>
+        <Text style={styles.mutedLine}>Vence {card.expiryDate}</Text>
+      </View>
+
+      <Text style={styles.sectionTitle}>Desglose</Text>
+      <View style={styles.card}>
+        <View style={styles.breakdownRow}>
+          <Text style={styles.breakdownLabel}>Precio unitario</Text>
+          <Text style={styles.breakdownValue}>
+            {formatCurrency(product.priceInCents, product.currency)}
+          </Text>
+        </View>
+        <View style={styles.breakdownRow}>
+          <Text style={styles.breakdownLabel}>Cantidad</Text>
+          <Text style={styles.breakdownValue}>{order.quantity}</Text>
+        </View>
+        <View style={styles.divider} />
+        <View style={styles.breakdownRow}>
+          <Text style={styles.totalLabel}>Total</Text>
+          <Text style={styles.totalValue}>
+            {formatCurrency(total, product.currency)}
+          </Text>
+        </View>
+      </View>
 
       {transaction.error ? <ErrorBanner message={transaction.error} /> : null}
 
-      <Button
-        title="Pagar"
-        onPress={handlePay}
-        loading={submitting}
-        disabled={submitting}
-      />
+      <View style={styles.buttonWrapper}>
+        <Button
+          title="Pagar"
+          onPress={handlePay}
+          loading={submitting}
+          disabled={submitting}
+          pill
+        />
+      </View>
+
+      <ProcessingOverlay visible={submitting} />
     </ScreenContainer>
   );
 }
@@ -93,19 +170,115 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: typography.subheading.fontSize,
-    fontWeight: '600',
+    fontWeight: '700',
     color: colors.text,
     marginTop: spacing.md,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
-  line: {
+  card: {
+    backgroundColor: colors.surface,
+    borderRadius: 12,
+    padding: spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 1,
+  },
+  productRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  productImage: {
+    width: 56,
+    height: 56,
+    borderRadius: 8,
+    backgroundColor: colors.border,
+  },
+  productInfo: {
+    flex: 1,
+    marginLeft: spacing.sm,
+  },
+  productName: {
     fontSize: typography.body.fontSize,
+    fontWeight: '600',
     color: colors.text,
   },
-  total: {
+  productMeta: {
+    marginTop: spacing.xs / 2,
+    fontSize: typography.caption.fontSize,
+    color: colors.textMuted,
+  },
+  productQty: {
+    fontSize: typography.body.fontSize,
+    fontWeight: '600',
+    color: colors.textMuted,
+  },
+  primaryLine: {
+    fontSize: typography.body.fontSize,
+    fontWeight: '600',
+    color: colors.text,
+    marginBottom: spacing.xs / 2,
+  },
+  mutedLine: {
+    fontSize: typography.caption.fontSize,
+    color: colors.textMuted,
+    marginBottom: spacing.xs / 2,
+  },
+  paymentRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.xs,
+  },
+  maskedNumber: {
+    fontSize: typography.body.fontSize,
+    fontWeight: '600',
+    color: colors.text,
+    letterSpacing: 1,
+  },
+  brandPill: {
+    backgroundColor: colors.background,
+    borderRadius: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs / 2,
+  },
+  brandPillText: {
+    fontSize: typography.caption.fontSize,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  breakdownRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: spacing.xs,
+  },
+  breakdownLabel: {
+    fontSize: typography.body.fontSize,
+    color: colors.textMuted,
+  },
+  breakdownValue: {
+    fontSize: typography.body.fontSize,
+    color: colors.text,
+    fontWeight: '500',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border,
+    marginVertical: spacing.xs,
+  },
+  totalLabel: {
+    fontSize: typography.subheading.fontSize,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  totalValue: {
     fontSize: typography.subheading.fontSize,
     fontWeight: '700',
     color: colors.primary,
+  },
+  buttonWrapper: {
+    marginTop: spacing.lg,
   },
 });
 

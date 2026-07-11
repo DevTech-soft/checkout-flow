@@ -21,7 +21,7 @@ function RootNavigator() {
       <Stack.Screen
         name="Home"
         component={HomeScreen}
-        options={{ title: 'Productos' }}
+        options={{ title: 'Productos', headerTitleAlign: 'center' }}
       />
       <Stack.Screen
         name="ProductDetail"
@@ -31,22 +31,22 @@ function RootNavigator() {
       <Stack.Screen
         name="Checkout"
         component={CheckoutScreen}
-        options={{ title: 'Checkout' }}
+        options={{ title: 'Checkout', headerTitleAlign: 'center' }}
       />
       <Stack.Screen
         name="CardForm"
         component={CardFormScreen}
-        options={{ title: 'Tarjeta' }}
+        options={{ title: 'Tarjeta', headerTitleAlign: 'center' }}
       />
       <Stack.Screen
         name="PaymentSummary"
         component={PaymentSummaryScreen}
-        options={{ title: 'Resumen' }}
+        options={{ title: 'Resumen', headerTitleAlign: 'center' }}
       />
       <Stack.Screen
         name="TransactionResult"
         component={TransactionResultScreen}
-        options={{ title: 'Resultado', headerBackVisible: false }}
+        options={{ title: 'Resultado', headerTitleAlign: 'center', headerBackVisible: false }}
       />
     </Stack.Navigator>
   );

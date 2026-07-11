@@ -16,7 +16,10 @@ const mockedCreateTransaction = createTransaction as jest.MockedFunction<
 
 function buildProps(navigate: jest.Mock): Props {
   return {
-    navigation: { navigate } as unknown as Props['navigation'],
+    navigation: {
+      navigate,
+      setOptions: jest.fn(),
+    } as unknown as Props['navigation'],
     route: {
       key: 'payment-summary',
       name: 'PaymentSummary',
@@ -78,7 +81,8 @@ describe('PaymentSummaryScreen', () => {
       { preloadedState },
     );
 
-    expect(screen.getByText('Audífonos Bluetooth x2')).toBeTruthy();
+    expect(screen.getByText('Audífonos Bluetooth')).toBeTruthy();
+    expect(screen.getByText('x2')).toBeTruthy();
     expect(screen.getByText('•••• •••• •••• 4242')).toBeTruthy();
   });
 
@@ -134,5 +138,42 @@ describe('PaymentSummaryScreen', () => {
     expect(
       screen.getAllByText('El gateway rechazó la transacción.').length,
     ).toBeGreaterThan(0);
+  });
+
+  it('blocks back navigation and shows the processing overlay while paying', async () => {
+    let resolveTransaction: (value: Awaited<ReturnType<typeof createTransaction>>) => void;
+    mockedCreateTransaction.mockReturnValue(
+      new Promise(resolve => {
+        resolveTransaction = resolve;
+      }),
+    );
+    const navigate = jest.fn();
+    const props = buildProps(navigate);
+    await renderWithProviders(<PaymentSummaryScreen {...props} />, {
+      preloadedState,
+    });
+
+    fireEvent.press(screen.getByText('Pagar'));
+
+    await waitFor(() => {
+      expect(screen.getByText('Procesando tu pago...')).toBeTruthy();
+    });
+    expect(props.navigation.setOptions).toHaveBeenCalledWith(
+      expect.objectContaining({ gestureEnabled: false, headerBackVisible: false }),
+    );
+
+    resolveTransaction!({
+      id: 'tx-1',
+      status: 'APPROVED',
+      amountInCents: 24000000,
+      currency: 'COP',
+      productId: '1',
+      createdAt: '2026-07-10T00:00:00.000Z',
+    });
+
+    await waitFor(() => {
+      expect(navigate).toHaveBeenCalledWith('TransactionResult');
+    });
+    expect(screen.queryByText('Procesando tu pago...')).toBeNull();
   });
 });
