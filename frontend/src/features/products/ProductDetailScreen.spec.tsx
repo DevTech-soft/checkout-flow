@@ -1,6 +1,7 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, screen, waitFor } from '@testing-library/react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import ProductDetailScreen from './ProductDetailScreen';
+import { renderWithProviders } from '../../tests/renderWithProviders';
 import type { RootStackParamList } from '@navigation/routes';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'ProductDetail'>;
@@ -14,7 +15,9 @@ function buildProps(navigate: jest.Mock, productId: string): Props {
 
 describe('ProductDetailScreen', () => {
   it('renders the product details', async () => {
-    await render(<ProductDetailScreen {...buildProps(jest.fn(), '1')} />);
+    await renderWithProviders(
+      <ProductDetailScreen {...buildProps(jest.fn(), '1')} />,
+    );
 
     await waitFor(() => {
       expect(screen.getByText('Audífonos Bluetooth')).toBeTruthy();
@@ -23,7 +26,9 @@ describe('ProductDetailScreen', () => {
   });
 
   it('shows an error state for an unknown product', async () => {
-    await render(<ProductDetailScreen {...buildProps(jest.fn(), 'missing')} />);
+    await renderWithProviders(
+      <ProductDetailScreen {...buildProps(jest.fn(), 'missing')} />,
+    );
 
     await waitFor(() => {
       expect(screen.getByText('Producto no encontrado.')).toBeTruthy();
@@ -31,34 +36,34 @@ describe('ProductDetailScreen', () => {
   });
 
   it('increases and decreases the quantity within stock limits', async () => {
-    await render(<ProductDetailScreen {...buildProps(jest.fn(), '1')} />);
+    await renderWithProviders(
+      <ProductDetailScreen {...buildProps(jest.fn(), '1')} />,
+    );
 
     await waitFor(() => {
       expect(screen.getByText('1')).toBeTruthy();
     });
 
     await fireEvent.press(screen.getByText('+'));
-
     expect(screen.getByText('2')).toBeTruthy();
 
     await fireEvent.press(screen.getByText('-'));
-
     expect(screen.getByText('1')).toBeTruthy();
   });
 
-  it('navigates to Checkout with the selected quantity', async () => {
+  it('stores the order in Redux and navigates to Checkout', async () => {
     const navigate = jest.fn();
-    await render(<ProductDetailScreen {...buildProps(navigate, '1')} />);
+    const { store } = await renderWithProviders(
+      <ProductDetailScreen {...buildProps(navigate, '1')} />,
+    );
 
     await waitFor(() => {
       expect(screen.getByText('Comprar')).toBeTruthy();
     });
 
-    fireEvent.press(screen.getByText('Comprar'));
+    await fireEvent.press(screen.getByText('Comprar'));
 
-    expect(navigate).toHaveBeenCalledWith('Checkout', {
-      productId: '1',
-      quantity: 1,
-    });
+    expect(navigate).toHaveBeenCalledWith('Checkout');
+    expect(store.getState().order).toEqual({ productId: '1', quantity: 1 });
   });
 });

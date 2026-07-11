@@ -1,36 +1,51 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react-native';
+import { fireEvent, screen } from '@testing-library/react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import CheckoutScreen from './CheckoutScreen';
+import { renderWithProviders } from '../../tests/renderWithProviders';
 import type { RootStackParamList } from '@navigation/routes';
+import type { RootState } from '@redux/store';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Checkout'>;
 
 function buildProps(navigate: jest.Mock): Props {
   return {
     navigation: { navigate } as unknown as Props['navigation'],
-    route: {
-      key: 'checkout',
-      name: 'Checkout',
-      params: { productId: '1', quantity: 2 },
-    },
+    route: { key: 'checkout', name: 'Checkout', params: undefined },
   };
 }
 
+const preloadedState: Partial<RootState> = {
+  order: { productId: '1', quantity: 2 },
+  products: {
+    items: [
+      {
+        id: '1',
+        name: 'Audífonos Bluetooth',
+        description: 'Audífonos inalámbricos con cancelación de ruido.',
+        priceInCents: 12000000,
+        currency: 'COP',
+        stock: 10,
+        imageUrl: 'https://placehold.co/400x400?text=Audifonos',
+      },
+    ],
+    status: 'succeeded',
+    error: null,
+  },
+};
+
 describe('CheckoutScreen', () => {
   it('renders the order summary', async () => {
-    await render(<CheckoutScreen {...buildProps(jest.fn())} />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Audífonos Bluetooth x2')).toBeTruthy();
+    await renderWithProviders(<CheckoutScreen {...buildProps(jest.fn())} />, {
+      preloadedState,
     });
+
+    expect(screen.getByText('Audífonos Bluetooth x2')).toBeTruthy();
   });
 
   it('blocks continuing when the customer form is invalid', async () => {
     const navigate = jest.fn();
-    await render(<CheckoutScreen {...buildProps(navigate)} />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Continuar')).toBeTruthy();
+    await renderWithProviders(<CheckoutScreen {...buildProps(navigate)} />, {
+      preloadedState,
     });
 
     await fireEvent.press(screen.getByText('Continuar'));
@@ -39,13 +54,12 @@ describe('CheckoutScreen', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  it('navigates to CardForm with the customer data when valid', async () => {
+  it('stores the customer data and navigates to CardForm when valid', async () => {
     const navigate = jest.fn();
-    await render(<CheckoutScreen {...buildProps(navigate)} />);
-
-    await waitFor(() => {
-      expect(screen.getByText('Nombre completo')).toBeTruthy();
-    });
+    const { store } = await renderWithProviders(
+      <CheckoutScreen {...buildProps(navigate)} />,
+      { preloadedState },
+    );
 
     await fireEvent.changeText(
       screen.getByLabelText('Nombre completo'),
@@ -59,14 +73,11 @@ describe('CheckoutScreen', () => {
 
     await fireEvent.press(screen.getByText('Continuar'));
 
-    expect(navigate).toHaveBeenCalledWith('CardForm', {
-      productId: '1',
-      quantity: 2,
-      customer: {
-        fullName: 'Jane Doe',
-        email: 'jane@example.com',
-        phoneNumber: '3001234567',
-      },
+    expect(navigate).toHaveBeenCalledWith('CardForm');
+    expect(store.getState().checkout.customer).toEqual({
+      fullName: 'Jane Doe',
+      email: 'jane@example.com',
+      phoneNumber: '3001234567',
     });
   });
 });

@@ -1,46 +1,33 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { FlatList, StyleSheet, Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import ScreenContainer from '@components/ScreenContainer';
 import ProductCard from '@components/ProductCard';
 import LoadingIndicator from '@components/LoadingIndicator';
 import ErrorBanner from '@components/ErrorBanner';
-import { getProducts } from '@services/products/productService';
-import type { Product } from '@services/products/product.types';
+import { useAppDispatch, useAppSelector } from '@hooks/redux';
+import {
+  fetchProducts,
+  selectProducts,
+  selectProductsError,
+  selectProductsStatus,
+} from '@redux/slices/products.slice';
 import { colors, spacing, typography } from '@theme';
 import type { RootStackParamList } from '@navigation/routes';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'Home'>;
 
 function HomeScreen({ navigation }: Props) {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const products = useAppSelector(selectProducts);
+  const status = useAppSelector(selectProductsStatus);
+  const error = useAppSelector(selectProductsError);
 
   useEffect(() => {
-    let isMounted = true;
-
-    getProducts()
-      .then(result => {
-        if (isMounted) {
-          setProducts(result);
-        }
-      })
-      .catch(() => {
-        if (isMounted) {
-          setError('No pudimos cargar los productos.');
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+    if (status === 'idle') {
+      dispatch(fetchProducts());
+    }
+  }, [status, dispatch]);
 
   const handleSelectProduct = useCallback(
     (productId: string) => {
@@ -49,7 +36,7 @@ function HomeScreen({ navigation }: Props) {
     [navigation],
   );
 
-  if (loading) {
+  if (status === 'loading' || status === 'idle') {
     return (
       <ScreenContainer scrollable={false}>
         <LoadingIndicator label="Cargando productos..." />

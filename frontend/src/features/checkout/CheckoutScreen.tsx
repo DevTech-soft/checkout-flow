@@ -1,12 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { StyleSheet, Text } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import ScreenContainer from '@components/ScreenContainer';
 import Button from '@components/Button';
 import TextField from '@components/TextField';
-import LoadingIndicator from '@components/LoadingIndicator';
-import { getProductById } from '@services/products/productService';
-import type { Product } from '@services/products/product.types';
+import ErrorBanner from '@components/ErrorBanner';
+import { useAppDispatch, useAppSelector } from '@hooks/redux';
+import { selectOrder } from '@redux/slices/order.slice';
+import { selectProductById } from '@redux/slices/products.slice';
+import { setCustomer } from '@redux/slices/checkout.slice';
 import { formatCurrency } from '@utils/currency';
 import {
   validateEmail,
@@ -20,30 +22,15 @@ type Props = NativeStackScreenProps<RootStackParamList, 'Checkout'>;
 
 type FormErrors = Partial<Record<'fullName' | 'email' | 'phoneNumber', string>>;
 
-function CheckoutScreen({ route, navigation }: Props) {
-  const { productId, quantity } = route.params;
-  const [product, setProduct] = useState<Product | null>(null);
-  const [loading, setLoading] = useState(true);
+function CheckoutScreen({ navigation }: Props) {
+  const dispatch = useAppDispatch();
+  const order = useAppSelector(selectOrder);
+  const product = useAppSelector(selectProductById(order.productId));
 
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [errors, setErrors] = useState<FormErrors>({});
-
-  useEffect(() => {
-    let isMounted = true;
-
-    getProductById(productId).then(result => {
-      if (isMounted) {
-        setProduct(result);
-        setLoading(false);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [productId]);
 
   const handleContinue = () => {
     const nextErrors: FormErrors = {
@@ -58,28 +45,25 @@ function CheckoutScreen({ route, navigation }: Props) {
       return;
     }
 
-    navigation.navigate('CardForm', {
-      productId,
-      quantity,
-      customer: { fullName, email, phoneNumber },
-    });
+    dispatch(setCustomer({ fullName, email, phoneNumber }));
+    navigation.navigate('CardForm');
   };
 
-  if (loading || !product) {
+  if (!product || !order.quantity) {
     return (
       <ScreenContainer>
-        <LoadingIndicator label="Cargando resumen..." />
+        <ErrorBanner message="No hay una orden activa. Vuelve a seleccionar un producto." />
       </ScreenContainer>
     );
   }
 
-  const total = product.priceInCents * quantity;
+  const total = product.priceInCents * order.quantity;
 
   return (
     <ScreenContainer>
       <Text style={styles.title}>Resumen de compra</Text>
       <Text style={styles.summaryLine}>
-        {product.name} x{quantity}
+        {product.name} x{order.quantity}
       </Text>
       <Text style={styles.total}>
         {formatCurrency(total, product.currency)}

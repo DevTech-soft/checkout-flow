@@ -1,31 +1,22 @@
-import { fireEvent, render, screen } from '@testing-library/react-native';
+import { fireEvent, screen } from '@testing-library/react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import CardFormScreen from './CardFormScreen';
+import { renderWithProviders } from '../../tests/renderWithProviders';
 import type { RootStackParamList } from '@navigation/routes';
 
 type Props = NativeStackScreenProps<RootStackParamList, 'CardForm'>;
 
-const customer = {
-  fullName: 'Jane Doe',
-  email: 'jane@example.com',
-  phoneNumber: '3001234567',
-};
-
 function buildProps(navigate: jest.Mock): Props {
   return {
     navigation: { navigate } as unknown as Props['navigation'],
-    route: {
-      key: 'card-form',
-      name: 'CardForm',
-      params: { productId: '1', quantity: 1, customer },
-    },
+    route: { key: 'card-form', name: 'CardForm', params: undefined },
   };
 }
 
 describe('CardFormScreen', () => {
   it('shows validation errors when submitting an empty form', async () => {
     const navigate = jest.fn();
-    await render(<CardFormScreen {...buildProps(navigate)} />);
+    await renderWithProviders(<CardFormScreen {...buildProps(navigate)} />);
 
     await fireEvent.press(screen.getByText('Continuar'));
 
@@ -37,7 +28,7 @@ describe('CardFormScreen', () => {
   });
 
   it('detects the Visa brand as the card number is typed', async () => {
-    await render(<CardFormScreen {...buildProps(jest.fn())} />);
+    await renderWithProviders(<CardFormScreen {...buildProps(jest.fn())} />);
 
     await fireEvent.changeText(
       screen.getByLabelText('Número de tarjeta'),
@@ -47,9 +38,11 @@ describe('CardFormScreen', () => {
     expect(screen.getByText('VISA')).toBeTruthy();
   });
 
-  it('navigates to PaymentSummary with a masked card summary when valid', async () => {
+  it('stores a masked card summary and navigates to PaymentSummary', async () => {
     const navigate = jest.fn();
-    await render(<CardFormScreen {...buildProps(navigate)} />);
+    const { store } = await renderWithProviders(
+      <CardFormScreen {...buildProps(navigate)} />,
+    );
 
     await fireEvent.changeText(
       screen.getByLabelText('Nombre en la tarjeta'),
@@ -67,16 +60,12 @@ describe('CardFormScreen', () => {
 
     await fireEvent.press(screen.getByText('Continuar'));
 
-    expect(navigate).toHaveBeenCalledWith('PaymentSummary', {
-      productId: '1',
-      quantity: 1,
-      customer,
-      card: {
-        brand: 'VISA',
-        lastFourDigits: '4242',
-        cardHolder: 'Jane Doe',
-        expiryDate: '12/99',
-      },
+    expect(navigate).toHaveBeenCalledWith('PaymentSummary');
+    expect(store.getState().card.card).toEqual({
+      brand: 'VISA',
+      lastFourDigits: '4242',
+      cardHolder: 'Jane Doe',
+      expiryDate: '12/99',
     });
   });
 });
