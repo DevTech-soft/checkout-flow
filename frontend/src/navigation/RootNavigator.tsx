@@ -34,7 +34,7 @@ function RootNavigator() {
       <Stack.Screen
         name="ProductDetail"
         component={ProductDetailScreen}
-        options={{ title: 'Detalle' }}
+        options={{ title: 'Detalle', headerTitleAlign: 'center' }}
       />
       <Stack.Screen
         name="Cart"

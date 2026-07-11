@@ -95,17 +95,19 @@ function ProductDetailScreen({ route, navigation }: Props) {
         />
       </View>
 
-      <Button
-        title="Agregar al carrito"
-        variant="secondary"
-        onPress={handleAddToCart}
-        disabled={product.stock === 0}
-      />
-      <Button
-        title="Comprar"
-        onPress={handleBuy}
-        disabled={product.stock === 0}
-      />
+      <View style={styles.actions}>
+        <Button
+          title="Agregar al carrito"
+          variant="secondary"
+          onPress={handleAddToCart}
+          disabled={product.stock === 0}
+        />
+        <Button
+          title="Comprar"
+          onPress={handleBuy}
+          disabled={product.stock === 0}
+        />
+      </View>
     </ScreenContainer>
   );
 }
@@ -153,6 +155,10 @@ const styles = StyleSheet.create({
     color: colors.text,
     minWidth: 24,
     textAlign: 'center',
+  },
+  actions: {
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
   },
 });
 

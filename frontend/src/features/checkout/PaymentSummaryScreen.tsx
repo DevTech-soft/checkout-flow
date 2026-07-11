@@ -78,7 +78,7 @@ function PaymentSummaryScreen({ navigation }: Props) {
       <Text style={styles.sectionTitle}>Resumen del pedido</Text>
       <View style={styles.card}>
         {lines.map(line => (
-          <View key={line.product.id} style={styles.productRow}>
+          <View key={line.product.id} style={styles.productRow }>
             <Image
               source={{ uri: line.product.imageUrl }}
               style={styles.productImage}
@@ -191,6 +191,7 @@ const styles = StyleSheet.create({
   productRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: spacing.sm,
   },
   productImage: {
     width: 56,
