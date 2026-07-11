@@ -26,6 +26,42 @@ npm start
 npm run android
 ```
 
+## Pruebas unitarias
+
+Cada proyecto corre su propia suite con Jest de forma independiente.
+
+```sh
+# Backend (NestJS)
+cd backend
+npm test              # suite completa — 70 tests / 22 suites
+npm run test:cov      # con reporte de cobertura
+
+# Frontend (React Native)
+cd frontend
+npm test              # suite completa — 122 tests / 30 suites
+npm test -- --coverage
+```
+
+| | Backend | Frontend |
+|---|---|---|
+| Tests | 70 | 122 |
+| Suites | 22 | 30 |
+| Cobertura | **100%** sobre código con lógica de negocio | **~98%** |
+| Mínimo exigido (`coverageThreshold`) | 80% | 80% |
+
+**Backend** — casos de uso, mappers, value objects y adaptadores probados con mocks planos (sin levantar Nest ni Prisma), gracias a la arquitectura hexagonal con puertos como clases abstractas:
+- Casos de uso de `application/` (productos y transacciones), incluida la reconciliación de transacciones `PENDING` contra el gateway de pagos.
+- Adaptador e integración con el gateway de pagos (firma de integridad, tokenización, consulta de estado).
+- Verificación de firma del webhook, filtros, interceptores y validación de configuración/entorno.
+- Repositorios Prisma y value objects del dominio (`Money`, etc.).
+
+**Frontend** — componentes, pantallas, slices de Redux, servicios HTTP y utilidades, con `@testing-library/react-native`:
+- Pantallas de checkout de extremo a extremo (selección de producto, datos de cliente, formulario de tarjeta con preview en vivo, resumen de pago con overlay de procesamiento, resultado de transacción).
+- Slices de Redux (`card`, `checkout`, `order`, `products`, `transaction`) y su persistencia cifrada.
+- Servicios de integración (`httpClient`, `productService`, `transactionService`, `wompiClient`) y utilidades de formato/validación (tarjeta, moneda, formularios).
+
+Instrucciones detalladas, decisiones de mockeo y notas de configuración de cada suite están en el README de cada proyecto ([`backend/README.md`](backend/README.md#pruebas), [`frontend/README.md`](frontend/README.md#pruebas)).
+
 ## Estado del proyecto
 
 - Backend: 100% de cobertura de pruebas sobre código con lógica de negocio.
