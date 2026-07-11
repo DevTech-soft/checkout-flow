@@ -61,6 +61,17 @@ const preloadedState: Partial<RootState> = {
 };
 
 describe('PaymentSummaryScreen', () => {
+  it('shows an error banner when required checkout data is missing', async () => {
+    await renderWithProviders(
+      <PaymentSummaryScreen {...buildProps(jest.fn())} />,
+      { preloadedState: { ...preloadedState, checkout: { customer: null } } },
+    );
+
+    expect(
+      screen.getByText('No hay datos suficientes para confirmar el pago.'),
+    ).toBeTruthy();
+  });
+
   it('renders the masked card and totals', async () => {
     await renderWithProviders(
       <PaymentSummaryScreen {...buildProps(jest.fn())} />,
@@ -100,5 +111,28 @@ describe('PaymentSummaryScreen', () => {
       email: 'jane@example.com',
       phoneNumber: '3001234567',
     });
+  });
+
+  it('shows a toast and still navigates to TransactionResult when the payment is rejected', async () => {
+    mockedCreateTransaction.mockRejectedValue(
+      new Error('El gateway rechazó la transacción.'),
+    );
+    const navigate = jest.fn();
+    const { store } = await renderWithProviders(
+      <PaymentSummaryScreen {...buildProps(navigate)} />,
+      { preloadedState },
+    );
+
+    await fireEvent.press(screen.getByText('Pagar'));
+
+    await waitFor(() => {
+      expect(navigate).toHaveBeenCalledWith('TransactionResult');
+    });
+    expect(store.getState().transaction.error).toBe(
+      'El gateway rechazó la transacción.',
+    );
+    expect(
+      screen.getAllByText('El gateway rechazó la transacción.').length,
+    ).toBeGreaterThan(0);
   });
 });

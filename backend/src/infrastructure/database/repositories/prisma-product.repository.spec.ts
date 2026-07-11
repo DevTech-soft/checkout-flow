@@ -44,6 +44,13 @@ describe('PrismaProductRepository', () => {
     expect(products[0].price).toEqual(Money.fromCents(10000, 'COP'));
   });
 
+  it('maps the record to a domain product when found by id', async () => {
+    const product = await repository.findById('product-1');
+
+    expect(product?.id).toBe('product-1');
+    expect(product?.price).toEqual(Money.fromCents(10000, 'COP'));
+  });
+
   it('returns null when a product is not found', async () => {
     prisma.product.findUnique.mockResolvedValue(null);
 

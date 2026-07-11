@@ -1,97 +1,75 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# Frontend
 
-# Getting Started
+Aplicación React Native (CLI, sin Expo) de checkout: catálogo de productos, captura de datos de envío, tokenización de tarjeta y confirmación de pago contra el backend y el sandbox de un gateway de pagos.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## Arquitectura
 
-## Step 1: Start Metro
-
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
-
-To start the Metro dev server, run the following command from the root of your React Native project:
-
-```sh
-# Using npm
-npm start
-
-# OR using Yarn
-yarn start
+```
+src/
+  app/              punto de entrada de la app (providers globales: Redux, Toast, navegación)
+  navigation/        stack de navegación y tipos de rutas
+  features/          una carpeta por pantalla (Splash, Home, ProductDetail, Checkout, CardForm, PaymentSummary, TransactionResult)
+  components/        componentes presentacionales reutilizables (Button, TextField, Toast, ErrorBanner, ...)
+  services/          clientes HTTP: backend propio (products, transactions) y gateway de pagos (tokenización)
+  redux/              slices de Redux Toolkit + middleware de persistencia cifrada
+  storage/            adaptador de AsyncStorage + capa de cifrado (secureStorage)
+  hooks/ · utils/ · theme/   utilidades transversales
 ```
 
-## Step 2: Build and run your app
+### Flujo de pago
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+1. **CardForm**: la tarjeta se tokeniza **directamente contra el gateway de pagos** desde el cliente (`services/gateway/wompiClient.ts`), usando la llave pública. El número de tarjeta/CVV nunca se envía al backend propio — solo el token resultante. Esto reduce el alcance PCI de este proyecto al mínimo posible.
+2. **PaymentSummary**: dispara `submitTransaction`, que llama al backend con el token de tarjeta y los datos del pedido.
+3. Si la transacción queda `PENDING`, el servicio hace **polling con backoff exponencial** (`pollTransactionStatus`) hasta resolver el estado o agotar los intentos.
+4. Cualquier error (tokenización, red, pago rechazado, timeout de polling) se muestra con un **Toast** global y no bloquea la navegación: `TransactionResult` siempre se muestra al final y refleja el estado real.
 
-### Android
+### Persistencia
 
-```sh
-# Using npm
-npm run android
+El pedido, los datos de contacto y el resultado de la transacción se persisten cifrados (AES, `crypto-js`) en `AsyncStorage` para sobrevivir a un cierre de la app, y se rehidratan en `SplashScreen` al arrancar.
 
-# OR using Yarn
-yarn android
-```
+## Variables de entorno
 
-### iOS
+Copia `.env.example` a `.env` (nunca commitear `.env`):
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+| Variable | Descripción |
+|---|---|
+| `API_BASE_URL` | URL base del backend propio |
+| `WOMPI_BASE_URL` | URL base del sandbox del gateway de pagos (tokenización de tarjeta) |
+| `WOMPI_PUBLIC_KEY` | Llave pública del gateway, usada solo para tokenizar desde el cliente |
+| `REDUX_PERSIST_KEY` | Llave de cifrado AES para el estado persistido en disco |
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
+## Instalación y ejecución
 
 ```sh
-bundle exec pod install
+npm install
+npm start          # Metro
+npm run android     # en otra terminal, con un emulador/dispositivo conectado
 ```
 
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
+> **iOS**: requiere `bundle install && bundle exec pod install` antes de `npm run ios` (ver guía oficial de React Native).
+
+## Pruebas
 
 ```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
-yarn ios
+npm test              # suite completa
+npm test -- --coverage
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+Cobertura actual: **~98%** (statements/branches/functions/lines), con un mínimo de 80% exigido vía `coverageThreshold` en `jest.config.js`.
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+## Generar el APK de release (Android)
 
-## Step 3: Modify your app
+```sh
+cd android
+./gradlew assembleRelease
+```
 
-Now that you have successfully run the app, let's make changes!
+El APK queda en `android/app/build/outputs/apk/release/app-release.apk` (firmado con el keystore de debug incluido — suficiente para instalar y probar, no para publicar en Play Store).
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+> **Nota Windows**: si el proyecto vive en una ruta larga (p. ej. `C:\Users\...\algún-directorio-largo\...`), el codegen C++ de New Architecture (`react-native-gesture-handler`) puede fallar con *"Filename longer than 260 characters"* incluso con `LongPathsEnabled` activado en el registro, porque `ninja.exe` no respeta esa política. La solución confiable es compilar desde una ruta corta (p. ej. copiar el proyecto a `C:\rn\` o similar) — `subst` **no** funciona porque Windows resuelve la unidad virtual a la ruta real. En Linux/macOS este problema no existe.
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+## Decisiones técnicas relevantes
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
-
-## Congratulations! :tada:
-
-You've successfully run and modified your React Native App. :partying_face:
-
-### Now what?
-
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
-
-# Troubleshooting
-
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
-
-# Learn More
-
-To learn more about React Native, take a look at the following resources:
-
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+- **Tokenización de tarjeta desde el cliente**: la app llama al gateway de pagos directamente con la llave pública; el backend nunca ve el número de tarjeta ni el CVV.
+- **Polling + Toast en vez de bloquear la UI**: un pago `PENDING` o un error de red no traban la navegación; el usuario siempre llega a la pantalla de resultado con feedback claro.
+- **Persistencia cifrada**: se guarda el mínimo necesario para retomar un pedido interrumpido (pedido, contacto, resultado de transacción), no el token de tarjeta.
